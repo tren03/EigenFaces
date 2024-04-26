@@ -74,28 +74,44 @@ def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
 
         boxes = detect_faces(net, image, minConfidence)
         for (startX, startY, endX, endY) in boxes:
-            faceROI = image[startY:endY, startX:endX]
-            faceROI = cv2.resize(faceROI, (47, 62))
-            faceROI = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
-
+            faceROI = image[startY:endY, startX:endX] # extract face from image by selecting part of the image 
+            faceROI = cv2.resize(faceROI, (47, 62)) # resize face image to 47x62 pixels
+            faceROI = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY) # convert image to grayscale            
             faces.append(faceROI)
             labels.append(name)
 
     faces = np.array(faces)
     labels = np.array(labels)
 
+
     return (faces, labels)
 
 
-inputPath = "../faces_organized/p1"  # Provide the path to the directory containing the face images
-net = cv2.dnn.readNet('../face_detector/deploy.prototxt', '../face_detector/res10_300x300_ssd_iter_140000.caffemodel')  # Initialize the face detection neural network
-minConfidence = 0.5  # Minimum confidence threshold for face detection (optional, default is 0.5)
-minSamples = 15  # Minimum number of samples required per face class (optional, default is 15)
-
-(faces,labels) = load_face_dataset(inputPath,net,minConfidence,minSamples)
-print(faces.shape)
-print(labels.shape)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+## TESTING ##
+
+# inputPath = "../faces_organized/p1"  # Provide the path to the directory containing the face images
+# net = cv2.dnn.readNet('../face_detector/deploy.prototxt', '../face_detector/res10_300x300_ssd_iter_140000.caffemodel')  # Initialize the face detection neural network
+# minConfidence = 0.5  # Minimum confidence threshold for face detection (optional, default is 0.5)
+# minSamples = 15  # Minimum number of samples required per face class (optional, default is 15)
+
+# (faces,labels) = load_face_dataset(inputPath,net,minConfidence,minSamples)
+# # to display image
+# img = cv2.imshow(f'{labels[0]}',faces[0])
+# cv2.waitKey(0) 
+# cv2.destroyAllWindows() 
 
 
