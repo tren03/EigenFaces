@@ -55,7 +55,7 @@ def load_dataset(input_path,net,minConfidence=0.3,minsamples=15):
         for(startX,startY,endX,endY) in boxes:
             #extract the roi of the face and ocnevrt it inot grey scale
             faceROI=image[startY:endY,startX:endX]
-            faceROI=cv2.resize(faceROI,(47,62))
+            faceROI=cv2.resize(faceROI,(68,68))
             faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
 
             faces.append(faceROI)

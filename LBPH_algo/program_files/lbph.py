@@ -103,7 +103,8 @@ def getHistograms(images_lbp):
     sd=(int)((s2/8)*(s3/8)*256)
     result=numpy.zeros((s1,sd))
     for i in range(s1):
-        result[i]=getVals(images_lbp[i],s2,s3)
+        image_lbp_reshaped = images_lbp[i].reshape((s2, s3))
+        result[i]=getVals(image_lbp_reshaped,s2,s3)
     return result
 
 def getVals(img_por,s2,s3):

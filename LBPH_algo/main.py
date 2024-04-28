@@ -42,19 +42,22 @@ labels=le.fit_transform(labels)
 
 # trian the algo
 
+
+# print("LBPH ALGO TIME")
+# recogniser=cv2.face.LBPHFaceRecogniser_create(radius=2,neighbours=6,grid_x=8,grid_y=8)
+# start=time.time()
+# recogniser.train(trainX,trainY)
+# end=time.time()
+# print(f"info training took{(end-start)} ")
+
 print("LBPH ALGO TIME")
-recogniser=cv2.face.LBPHFaceRecogniser_create(radius=2,neighbours=6,grid_x=8,grid_y=8)
 start=time.time()
-recogniser.train(trainX,trainY)
+recognizer=lb.train_lbph(trainX)
+print('done')
+np.save('trainedRec.npy',recognizer)
 end=time.time()
 print(f"info training took{(end-start)} ")
 
-print("LBPH ALGO TIME")
-recogniser=cv2.face.LBPHFaceRecogniser_create(radius=2,neighbours=6,grid_x=8,grid_y=8)
-start=time.time()
-recogniser.train(trainX,trainY)
-end=time.time()
-print(f"info training took{(end-start)} ")
 
 
 print("info gathering time")
@@ -62,9 +65,9 @@ predictions=[]
 confidence=[]
 start=time.time()
 
-
+trained_face_recognizer=np.load('trainedRec.npy')
 for i in range(0,len(testX)):
-    (prediction,conf)=recogniser.predict(testX[i])
+    (prediction,conf)=lb.predict_lbph(testX[i],trained_face_recognizer,trainY)
     predictions.append(prediction)
     confidence.append(conf)
 
