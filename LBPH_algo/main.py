@@ -76,7 +76,7 @@ print(f"the time taken for predtion is {end-start} ")
 
 print(classification_report(testY,predictions,target_names=le.classes_))
 
-idxs = np.random.choice(range(0, len(testY)), size=10, replace=False)
+idxs = np.random.choice(range(0, len(testY)), size=22, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
 	# grab the predicted name and actual name
@@ -99,3 +99,21 @@ for i in idxs:
 	# display the current face to our screen
 	cv2.imshow("Face", face)
 	cv2.waitKey(0)
+
+
+# *** plotting the histograms ***     
+# import matplotlib.pyplot as plt
+
+# def display_histograms(images_lbp):
+#     for i, image_lbp in enumerate(images_lbp):
+#         plt.figure(figsize=(8, 6))
+#         plt.hist(image_lbp.ravel(), bins=256, range=(0, 256), color='gray', alpha=0.7)
+#         plt.title(f'Image {i+1} LBP Histogram')
+#         plt.xlabel('Pixel Value')
+#         plt.ylabel('Frequency')
+#         plt.grid(True)
+#         plt.show()
+
+# # Assuming you have already loaded images and computed their LBPs
+# images_lbp = lb.localBinaryPattern(testX)  # Compute LBPs for training images
+# display_histograms(images_lbp)

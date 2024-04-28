@@ -1,4 +1,7 @@
 import cv2, sys, numpy, os,time
+
+
+import matplotlib.pyplot as plt
 def train_lbph(images):
     images_lbp=localBinaryPattern(images)
     images_histogramed=getHistograms(images_lbp)
@@ -149,3 +152,4 @@ def predict_lbph_multi(input_image,recognizer,labels):
         predictions[j]=labels[index]
         minval_confidence[j]=minval
     return (predictions)
+
