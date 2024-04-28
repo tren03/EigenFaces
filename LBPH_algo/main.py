@@ -8,6 +8,7 @@ import time
 import cv2
 import os
 from program_files.face import load_dataset
+from program_files import lbph as lb
 
 #arguments list 
 # construct the argument parser and parse the arguments
@@ -48,6 +49,12 @@ recogniser.train(trainX,trainY)
 end=time.time()
 print(f"info training took{(end-start)} ")
 
+print("LBPH ALGO TIME")
+recogniser=cv2.face.LBPHFaceRecogniser_create(radius=2,neighbours=6,grid_x=8,grid_y=8)
+start=time.time()
+recogniser.train(trainX,trainY)
+end=time.time()
+print(f"info training took{(end-start)} ")
 
 
 print("info gathering time")
