@@ -5,6 +5,8 @@ from sklearn.svm import SVC # we train our support vector machine classifier on 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from skimage.exposure import rescale_intensity # Used to visualize the eigenface representations
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from pyimagesearch.faces import load_face_dataset
 from imutils import build_montages
 import numpy as np
@@ -93,14 +95,42 @@ if args["visualize"] > 0:
 
 
 # train a classifier on the eigenfaces representation
-print("[INFO] training classifier...")
+print("[INFO] training SVM classifier...")
 model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42)
 model.fit(trainX, trainY)
 # evaluate the model
 print("[INFO] evaluating model...")
 predictions = model.predict(pca.transform(testX))
+print("*** SVC REPORT ***")
 print(classification_report(testY, predictions,
 	target_names=le.classes_))
+
+
+
+# Train a Random Forest classifier on the eigenfaces representation
+print("[INFO] training Random Forest classifier...")
+random_forest_model = RandomForestClassifier(n_estimators=100, random_state=42)
+random_forest_model.fit(trainX, trainY)
+# Evaluate the model
+print("[INFO] evaluating Random Forest model...")
+predictions_rf = random_forest_model.predict(pca.transform(testX))
+print("*** RANDOM FOREST REPORT ***")
+print(classification_report(testY, predictions_rf, target_names=le.classes_))
+
+
+
+
+# Train a k-Nearest Neighbors classifier on the eigenfaces representation
+print("[INFO] training k-NN classifier...")
+knn_model = KNeighborsClassifier(n_neighbors=5)
+knn_model.fit(trainX, trainY)
+# Evaluate the model
+print("[INFO] evaluating k-NN model...")
+print("*** KNN REPORT ***")
+predictions_knn = knn_model.predict(pca.transform(testX))
+print(classification_report(testY, predictions_knn, target_names=le.classes_))
+
+
 
 
 
@@ -109,7 +139,7 @@ idxs = np.random.choice(range(0, len(testY)), size=22, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
 	# grab the predicted name and actual name
-	predName = le.inverse_transform([predictions[i]])[0]
+	predName = le.inverse_transform([predictions_knn[i]])[0]
 	actualName = le.classes_[testY[i]]
 	# grab the face image and resize it such that we can easily see
 	# it on our screen
