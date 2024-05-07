@@ -11,7 +11,7 @@ import os
 import numpy as np
 ap = argparse.ArgumentParser()
 ap.add_argument("-f", "--face", type=str,
-	default="face_detector",
+	default="../Detector_model",
 	help="path to face detector model directory")
 args = vars(ap.parse_args())
 
