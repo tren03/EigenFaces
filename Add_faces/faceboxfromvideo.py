@@ -12,7 +12,7 @@ import numpy as np
 from  ..LBPH_algo.program_files import lbph as lb
 ap = argparse.ArgumentParser()
 ap.add_argument("-f", "--face", type=str,
-	default="face_detector",
+	default="../Detector_model",
 	help="path to face detector model directory")
 args = vars(ap.parse_args())
 
