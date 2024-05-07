@@ -5,11 +5,17 @@ add a box in the frame with those coordinates on the frame
 
 """
 # from LBPH_algo.program_files.face import detect_faces
+
 import cv2
 import argparse
 import os
+import sys
 import numpy as np
-from  ..LBPH_algo.program_files import lbph as lb
+import joblib
+# from  ..LBPH_algo.program_files import lbph as lb
+# from LBPH_algo.program_files import lbph as lb
+sys.path.append("..")
+from LBPH_algo.program_files import lbph as lb 
 ap = argparse.ArgumentParser()
 ap.add_argument("-f", "--face", type=str,
 	default="../Detector_model",
@@ -53,7 +59,9 @@ cap=cv2.VideoCapture(0)
 if not cap.isOpened():
     print("no camera")
     exit()
-faces=[]
+trained_recogniser=np.load("../LBPH_algo/trainedRec.npy")
+trained_labels=np.load("../LBPH_algo/Ytrain.npy")
+le=joblib.load("../LBPH_algo/labelencoder.pkl")
 while True:
     ret,frame=cap.read()
     if not ret:
@@ -68,9 +76,13 @@ while True:
         faceROI=cv2.resize(faceROI,(68,68))
         faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
         # faces.append(faceROI)
+        #create a new image or modify the same if no output is specified with a rectangle (image,startcoords,endcoords,color_of_box,thickness)
+
         cv2.rectangle(frame,(startX,startY),(endX,endY),(0,255,0),4)
-        lb.predict_lbph()
-    #create a new iamge with a rectangle (image,startcoords,endcoords,color_of_box,thickness)
+        (prediction,confidence)=lb.predict_lbph(faceROI,trained_recogniser,trained_labels)
+        #puts text on the screen (image,text,coords,font,fontscale,color)
+        predName = le.inverse_transform([prediction])[0]
+        cv2.putText(frame,f"{predName}",(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0,255,0))
     cv2.imshow("Face",frame)
     #waits 1 millisec for q to be pressed, if pressed then brek out and clsoe the windows
     if cv2.waitKey(1) & 0xFF == ord('q'):

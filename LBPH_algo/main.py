@@ -9,6 +9,7 @@ import cv2
 import os
 from program_files.face import load_dataset
 from program_files import lbph as lb
+import joblib
 
 #arguments list 
 # construct the argument parser and parse the arguments
@@ -37,7 +38,7 @@ print("[INFO] {} images in dataset".format(len(faces)))
 
 le=LabelEncoder()
 labels=le.fit_transform(labels)
-
+joblib.dump(le,"labelencoder.pkl")
 (trainX,testX,trainY,testY)=train_test_split(faces,labels,test_size=0.25,stratify=labels,random_state=42)
 
 print(type(trainY))
@@ -80,12 +81,14 @@ print(f"the time taken for predtion is {end-start} ")
 
 print(classification_report(testY,predictions,target_names=le.classes_))
 
+saved_label_encoder=joblib.load("labelencoder.pkl")
+
 idxs = np.random.choice(range(0, len(testY)), size=22, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
 	# grab the predicted name and actual name
-	predName = le.inverse_transform([predictions[i]])[0]
-	actualName = le.classes_[testY[i]]
+	predName = saved_label_encoder.inverse_transform([predictions[i]])[0]
+	actualName = saved_label_encoder.classes_[testY[i]]
 	# grab the face image and resize it such that we can easily see
 	# it on our screen
 	face = np.dstack([testX[i]] * 3)
