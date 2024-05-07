@@ -7,7 +7,7 @@ import cv2
 import time
 import os
 
-faces_root="/home/sriram/Desktop/programfiles/programmingfiles/EigenFaces/Faces"
+faces_root="../Faces"
 def face_dir_point():
     os.chdir(faces_root)
 

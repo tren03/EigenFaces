@@ -15,10 +15,11 @@ import imutils
 import time
 import cv2
 import os
+import pickle
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--input", type=str, required=True,
+ap.add_argument("-i", "--input", type=str, default='../Faces',
 	help="path to input directory of images")
 
 # ap.add_argument("-f", "--face", type=str,
@@ -98,6 +99,10 @@ if args["visualize"] > 0:
 print("[INFO] training SVM classifier...")
 model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42)
 model.fit(trainX, trainY)
+
+filename = "final_svc_model.sav"
+pickle.dump(model,open(filename,'wb'))
+
 # evaluate the model
 print("[INFO] evaluating model...")
 predictions = model.predict(pca.transform(testX))
@@ -139,7 +144,7 @@ idxs = np.random.choice(range(0, len(testY)), size=22, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
 	# grab the predicted name and actual name
-	predName = le.inverse_transform([predictions_knn[i]])[0]
+	predName = le.inverse_transform([predictions[i]])[0]
 	actualName = le.classes_[testY[i]]
 	# grab the face image and resize it such that we can easily see
 	# it on our screen
