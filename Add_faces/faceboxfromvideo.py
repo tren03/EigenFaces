@@ -9,6 +9,7 @@ import cv2
 import argparse
 import os
 import numpy as np
+from  ..LBPH_algo.program_files import lbph as lb
 ap = argparse.ArgumentParser()
 ap.add_argument("-f", "--face", type=str,
 	default="face_detector",
@@ -52,7 +53,7 @@ cap=cv2.VideoCapture(0)
 if not cap.isOpened():
     print("no camera")
     exit()
-
+faces=[]
 while True:
     ret,frame=cap.read()
     if not ret:
@@ -63,8 +64,12 @@ while True:
 
     boxes=detect_faces(frame)
     for (startX,startY,endX,endY) in boxes:
+        faceROI=frame[startY:endY,startX:endX]
+        faceROI=cv2.resize(faceROI,(68,68))
+        faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
+        # faces.append(faceROI)
         cv2.rectangle(frame,(startX,startY),(endX,endY),(0,255,0),4)
-
+        lb.predict_lbph()
     #create a new iamge with a rectangle (image,startcoords,endcoords,color_of_box,thickness)
     cv2.imshow("Face",frame)
     #waits 1 millisec for q to be pressed, if pressed then brek out and clsoe the windows
