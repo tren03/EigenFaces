@@ -40,6 +40,8 @@ labels=le.fit_transform(labels)
 
 (trainX,testX,trainY,testY)=train_test_split(faces,labels,test_size=0.25,stratify=labels,random_state=42)
 
+print(type(trainY))
+# exit()
 # trian the algo
 
 
@@ -55,6 +57,7 @@ start=time.time()
 recognizer=lb.train_lbph(trainX)
 print('done')
 np.save('trainedRec.npy',recognizer)
+np.save('Ytrain.npy',trainY)
 end=time.time()
 print(f"info training took{(end-start)} ")
 
@@ -66,8 +69,9 @@ confidence=[]
 start=time.time()
 
 trained_face_recognizer=np.load('trainedRec.npy')
+trained_labels=np.load("Ytrain.npy")
 for i in range(0,len(testX)):
-    (prediction,conf)=lb.predict_lbph(testX[i],trained_face_recognizer,trainY)
+    (prediction,conf)=lb.predict_lbph(testX[i],trained_face_recognizer,trained_labels)
     predictions.append(prediction)
     confidence.append(conf)
 
