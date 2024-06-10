@@ -8,6 +8,7 @@ from skimage.exposure import rescale_intensity # Used to visualize the eigenface
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from pyimagesearch.faces import load_face_dataset
+from pyimagesearch.faces import detect_faces
 from imutils import build_montages
 import numpy as np
 import argparse
@@ -16,6 +17,8 @@ import time
 import cv2
 import os
 import pickle
+from imutils import resize
+from sklearn.ensemble import BaggingClassifier
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -97,7 +100,7 @@ if args["visualize"] > 0:
 
 # train a classifier on the eigenfaces representation
 print("[INFO] training SVM classifier...")
-model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42)
+model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42,probability=True)
 model.fit(trainX, trainY)
 
 filename = "final_svc_model.sav"
@@ -110,6 +113,9 @@ print("*** SVC REPORT ***")
 print(classification_report(testY, predictions,
 	target_names=le.classes_))
 
+bagging_svm = BaggingClassifier(base_estimator=model, n_estimators=10, random_state=42)
+# Train the ensemble model
+bagging_svm.fit(trainX, trainY)
 
 
 # Train a Random Forest classifier on the eigenfaces representation
@@ -135,12 +141,8 @@ print("*** KNN REPORT ***")
 predictions_knn = knn_model.predict(pca.transform(testX))
 print(classification_report(testY, predictions_knn, target_names=le.classes_))
 
-
-
-
-
 # generate a sample of testing data
-idxs = np.random.choice(range(0, len(testY)), size=22, replace=False)
+idxs = np.random.choice(range(0, len(testY)), size=2, replace=False)
 # loop over a sample of the testing data
 for i in idxs:
 	# grab the predicted name and actual name
@@ -161,5 +163,52 @@ for i in idxs:
 	# display the current face to our screen
 	cv2.imshow("Face", face)
 	cv2.waitKey(0)
+
+
+
+
+# Define a function to perform face recognition on a single image
+def predict_single_face(image_path, model, pca, le, net):
+    # Load the input image
+    image = cv2.imread(image_path)
+
+    # Perform face detection
+    (boxes) = detect_faces(net, image)
+
+    # Assuming there's only one face in the test image
+    if len(boxes) == 1:
+        # Extract the face ROI
+        (startX, startY, endX, endY) = boxes[0]
+        faceROI = image[startY:endY, startX:endX]
+
+        # Resize the face ROI
+        faceROI = cv2.resize(faceROI, (47, 62))
+
+        # Convert the face ROI to grayscale
+        gray_face = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
+
+        # Flatten the grayscale face ROI
+        flattened_face = gray_face.flatten()
+
+        # Perform PCA transformation
+        pca_face = pca.transform(flattened_face.reshape(1, -1))
+
+        # Perform face recognition prediction
+        prediction = model.predict(pca_face)
+        predicted_name = le.inverse_transform(prediction)[0]
+
+        # Get the predicted probabilities
+        probabilities = model.predict_proba(pca_face)
+
+        return predicted_name, probabilities
+    else:
+        print("Error: Detected more than one face in the test image.")
+        return None, None
+
+# Test the function on a single image
+image_path = "single_face_test/test2.jpg"
+predicted_name, predicted_proba = predict_single_face(image_path, model, pca, le, net)
+print("Predicted Name:", predicted_name)
+print("Predicted Probability:", predicted_proba)
 
 
