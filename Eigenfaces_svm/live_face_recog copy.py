@@ -23,9 +23,8 @@ import numpy as np
 import argparse
 import imutils
 import time
-import cv2
 import os
-import pickle
+from sklearn.ensemble import BaggingClassifier
 
 
 # construct the argument parser and parse the arguments
@@ -49,8 +48,8 @@ print("[INFO] loading face detector model...")
 net = cv2.dnn.readNet('face_detector/deploy.prototxt', 'face_detector/res10_300x300_ssd_iter_140000.caffemodel')
 
 
-# load the CALTECH faces dataset
-print("[INFO] loading dataset...")
+
+print("[INFO] loading dataset...")  
 (faces, labels) = load_face_dataset(args["input"], net,
 	minConfidence=0.5, minSamples=20)
 print("[INFO] {} images in dataset".format(len(faces)))
@@ -110,7 +109,7 @@ if args["visualize"] > 0:
 
 # train a classifier on the eigenfaces representation
 print("[INFO] training SVM classifier...")
-model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42)
+model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
 model.fit(trainX, trainY)
 
 
@@ -182,13 +181,21 @@ while True:
         faceROI = frame[startY:endY, startX:endX] # extract face from image by selecting part of the image 
         faceROI = cv2.resize(faceROI, (47, 62)) # resize face image to 47x62 pixels
         faceROI_gray = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow("resized",faceROI_gray)
 
         # Apply PCA transformation
         pca_face = pca.transform(faceROI_gray.flatten().reshape(1, -1))
 
         # Perform face recognition
         prediction = model.predict(pca_face)
-        predicted_name = le.inverse_transform(prediction)[0]
+        confidence_scores = model.predict_proba(pca_face)
+        if np.max(confidence_scores) < 0.50:
+            predicted_name = "unknown"
+        else:
+          predicted_name = le.inverse_transform(prediction)[0]
+
+    
+        print(confidence_scores)
 
         # Draw the recognition result on the frame
         cv2.putText(frame, predicted_name, (startX, startY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
@@ -207,6 +214,6 @@ while True:
     cv2.imshow("Face",frame)
     #waits 1 millisec for q to be pressed, if pressed then brek out and clsoe the windows
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        break   
 cap.release()
 cv2.destroyAllWindows()

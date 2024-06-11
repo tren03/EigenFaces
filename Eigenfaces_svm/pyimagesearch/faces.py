@@ -2,24 +2,10 @@ from imutils import paths
 import numpy as np 
 import cv2
 import os
-
+import albumentations as A
 # net is our face detector
 
 def detect_faces(net, image, minConfidence=0.5):
-    # grab the dimensions of the image and then construct a blob from it
-    
-# The cv2.dnn.blobFromImage() function is used to preprocess an image before feeding it into a deep neural network (DNN) for tasks like object detection, classification, or segmentation.
-# Here's what each parameter does:
-# image: This is the input image that you want to process.
-# scalefactor: This parameter is used to scale down (or up) the image before feeding it into the neural network. In this case, it's set to 1.0, which means the image is not scaled.
-# size: This parameter specifies the spatial size that the input image will be resized to before passing it through the network. It's given as a tuple (width, height). In this case, the size is set to (300, 300), meaning the image will be resized to a width of 300 pixels and a height of 300 pixels.
-# mean: This parameter is the mean subtraction values. It's a tuple in BGR order that's subtracted from each channel of the image. It's used for data normalization. These values are typically obtained from the training dataset. In this case, (104.0, 177.0, 123.0) are the mean values.
-# The function returns a 4-dimensional NumPy array (a "blob") representing the preprocessed image that can be passed to the neural network for inference. This array typically has the shape (batch_size, num_channels, width, height), where:
-# batch_size: The number of images processed at once. In this case, it's 1.
-# num_channels: The number of channels in the image. Usually 3 for RGB images.
-# width: The width of the image after resizing.
-# height: The height of the image after resizing.
-
     (h, w) = image.shape[:2]
     blob = cv2.dnn.blobFromImage(image, 1.0, (300, 300),(104.0, 177.0, 123.0))
     
@@ -48,17 +34,20 @@ def detect_faces(net, image, minConfidence=0.5):
 
 def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
     
-	#This line uses the list_images function from the paths module of the imutils library to obtain a list of file paths to all the images in the inputPath directory. These paths are stored in the imagePaths list.
+
+    # Define augmentation function for different lighting conditions
+    def augment_image(image):
+        transform = A.Compose([
+            A.RandomBrightnessContrast(p=0.5),  # Adjust brightness and contrast randomly
+            # You can add more augmentation techniques here for different lighting conditions
+        ])
+        augmented = transform(image=image)
+        return augmented['image']
+
+    # Rest of the function remains the same
     imagePaths = list(paths.list_images(inputPath))
-    
-	#if image path = faces_organized/p1/img_001, p.split(os.path.sep) converts it into a list seperating based on the os.path.sep which is a seperator used in file paths. It would return a list ["faces_organized,","p1","img_001"]. The [-2] indicates we extrace 2nd index from the ending of the array and store it in names array
     names = [p.split(os.path.sep)[-2] for p in imagePaths]
-
-
-	#returns the count of unique names present which is the nubmer of images for each person
     (names, counts) = np.unique(names, return_counts=True)
-    
-	#convert names to list as it is a ndarray
     names = names.tolist()
 
     faces = []
@@ -70,22 +59,25 @@ def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
 
         if counts[names.index(name)] < minSamples:
             continue
-        
 
         boxes = detect_faces(net, image, minConfidence)
         for (startX, startY, endX, endY) in boxes:
-            faceROI = image[startY:endY, startX:endX] # extract face from image by selecting part of the image 
-            faceROI = cv2.resize(faceROI, (47, 62)) # resize face image to 47x62 pixels
-            faceROI = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY) # convert image to grayscale            
-            faces.append(faceROI)
+            faceROI = image[startY:endY, startX:endX]  # Extract face from image
+            faceROI = cv2.resize(faceROI, (47, 62))  # Resize face image
+            faceROI_grey = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)  # Convert image to grayscale
+            faceROI = np.stack([faceROI_grey] * 3, axis=-1)  # Ensure the image has 3 channels (required by albumentations)
+            augmented_face = augment_image(faceROI)  # Apply augmentation for different lighting conditions
+            augmented_face = cv2.cvtColor(augmented_face, cv2.COLOR_BGR2GRAY)  # Convert back to grayscale
+            
+            faces.append(faceROI_grey)
+            labels.append(name)
+            faces.append(augmented_face)
             labels.append(name)
 
     faces = np.array(faces)
     labels = np.array(labels)
 
-
-    return (faces, labels)
-
+    return faces, labels
 
 
 
@@ -101,17 +93,23 @@ def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
 
 
 
-## TESTING ##
 
-# inputPath = "../faces_organized/p1"  # Provide the path to the directory containing the face images
-# net = cv2.dnn.readNet('../face_detector/deploy.prototxt', '../face_detector/res10_300x300_ssd_iter_140000.caffemodel')  # Initialize the face detection neural network
+# # TESTING ##
+
+# inputPath = "../../Faces/vishnu"  # Provide the path to the directory containing the face images
+# net = cv2.dnn.readNet('../../Detector_model/deploy.prototxt', '../../Detector_model/res10_300x300_ssd_iter_140000.caffemodel')  # Initialize the face detection neural network
 # minConfidence = 0.5  # Minimum confidence threshold for face detection (optional, default is 0.5)
 # minSamples = 15  # Minimum number of samples required per face class (optional, default is 15)
 
 # (faces,labels) = load_face_dataset(inputPath,net,minConfidence,minSamples)
 # # to display image
-# img = cv2.imshow(f'{labels[0]}',faces[0])
-# cv2.waitKey(0) 
+
+# print(labels.size)
+
+# for face, label in zip(faces, labels):
+#     img = cv2.imshow(label, face)
+#     cv2.waitKey(0)
+
 # cv2.destroyAllWindows() 
 
 
