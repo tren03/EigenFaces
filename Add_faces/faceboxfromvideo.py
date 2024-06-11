@@ -12,6 +12,7 @@ import os
 import sys
 import numpy as np
 import joblib
+
 # from  ..LBPH_algo.program_files import lbph as lb
 # from LBPH_algo.program_files import lbph as lb
 sys.path.append("..")
@@ -75,6 +76,7 @@ while True:
         faceROI=frame[startY:endY,startX:endX]
         faceROI=cv2.resize(faceROI,(68,68))
         faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
+        cv2.imshow("modified",faceROI)
         # faces.append(faceROI)
         #create a new image or modify the same if no output is specified with a rectangle (image,startcoords,endcoords,color_of_box,thickness)
 
