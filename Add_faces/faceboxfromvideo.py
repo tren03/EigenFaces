@@ -84,7 +84,7 @@ while True:
         (prediction,confidence)=lb.predict_lbph(faceROI,trained_recogniser,trained_labels)
         #puts text on the screen (image,text,coords,font,fontscale,color)
         predName = le.inverse_transform([prediction])[0]
-        cv2.putText(frame,f"{predName}",(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0,255,0))
+        cv2.putText(frame,f"{predName},{confidence}",(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0,255,0))
     cv2.imshow("Face",frame)
     #waits 1 millisec for q to be pressed, if pressed then brek out and clsoe the windows
     if cv2.waitKey(1) & 0xFF == ord('q'):
