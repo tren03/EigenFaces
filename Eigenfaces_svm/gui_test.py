@@ -21,7 +21,9 @@ cap = None
 capture_started = False
 capture_start_time = 0
 capture_frame = None  # Initialize capture_frame globally
-
+image_frame=None
+image_label=None
+tk_image=None
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
@@ -253,17 +255,18 @@ def load_image():
             image_rgb = cv2.resize(image_rgb, (max_width, new_height))
         
         # Convert the image to RGB for Tkinter display
-        image_rgb = Image.fromarray(image_rgb)
-        image_rgb = ImageTk.PhotoImage(image_rgb)
+        # image_rgb = Image.fromarray(image_rgb)
+        # image_rgb = ImageTk.PhotoImage(image_rgb)
 
+        load_image_onto_image_frame(image_rgb)
         # Update the panel with the new image
-        if panel is None:
-            panel = Label(image=image_rgb)
-            panel.image = image_rgb
-            panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-        else:
-            panel.config(image=image_rgb)
-            panel.image = image_rgb
+        # if panel is None:
+        #     panel = Label(image=image_rgb)
+        #     panel.image = image_rgb
+        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+        # else:
+        #     panel.config(image=image_rgb)
+        #     panel.image = image_rgb
 
         # Show the back button
         back_btn.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10")
@@ -273,12 +276,12 @@ def load_image():
 
 # Function to go back to the home screen
 def go_back():
-    global panel, capture_frame
+    global panel, capture_frame,image_frame
 
     # Check if capture frame already exists, do nothing if it does
-    if capture_frame:
-        capture_frame.destroy()
-        capture_frame = None  # Reset the global variable
+    # if capture_frame:
+    #     capture_frame.destroy()
+    #     capture_frame = None  # Reset the global variable
 
     if panel:
         panel.image = None
@@ -295,13 +298,17 @@ def go_back():
     back_btn.pack_forget()
 
     # Forget the capture details entry widgets
-    name_entry.pack_forget()
-    count_entry.pack_forget()
-    max_seconds_entry.pack_forget()
-    name_label.pack_forget()
-    count_label.pack_forget()
-    max_seconds_label.pack_forget()
-    start_capture_btn.pack_forget()
+    # name_entry.pack_forget()
+    # count_entry.pack_forget()
+    # max_seconds_entry.pack_forget()
+    # name_label.pack_forget()
+    # count_label.pack_forget()
+    # max_seconds_label.pack_forget()
+    # start_capture_btn.pack_forget()
+    if capture_frame:
+        capture_frame.pack_forget()
+    if image_frame:
+        image_frame.pack_forget()
 
 def start_capture_gui():
     global panel, capture_frame
@@ -314,7 +321,7 @@ def start_capture_gui():
     result_label.config(text=" Enter details for capturing images ")
 
     # Create a new frame for capturing images
-    capture_frame = tk.Frame(root)
+    capture_frame = tk.Frame(root,bd=5, relief="solid", borderwidth=2)
     capture_frame.pack(side="left", fill="y", padx=10, pady=10)
 
     # Capture details entry
@@ -339,6 +346,32 @@ def start_capture_gui():
 
     back_btn.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10")
 
+def load_image_onto_image_frame(image):
+    global image_frame, image_label, tk_image
+
+    # If image frame doesn't exist, create it
+    if image_frame:
+        image_frame.destroy()
+        image_frame = None  # Reset the global variable
+    
+
+    image_frame = tk.Frame(root, bd=5, relief="solid", borderwidth=2)
+    image_frame.pack(side="left", fill="y", padx=10, pady=10)
+
+    # Convert the image to a format that Tkinter can use
+    pil_image = Image.fromarray(image)
+
+    tk_image = ImageTk.PhotoImage(pil_image)
+
+    # If image label already exists, update its image
+
+    # Create a label to display the image
+    image_label = tk.Label(image_frame, image=tk_image)
+    image_label.image = tk_image  # Keep a reference to avoid garbage collection
+
+    # Pack the label into the frame
+    image_label.pack()
+    # Keep a reference to the image to avoid garbage collection
 # Initialize the GUI window
 root = tk.Tk()
 root.title("Face Recognition")
@@ -353,7 +386,7 @@ root.minsize(starting_width, starting_height)
 panel = None
 
 # Create a frame for the buttons on the right side
-button_frame = tk.Frame(root)
+button_frame = tk.Frame(root,bd=5, relief="solid", borderwidth=2)
 button_frame.pack(side="right", fill="y", padx=10, pady=10)
 
 # Create a button to load an image
