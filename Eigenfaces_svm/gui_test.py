@@ -1,9 +1,3 @@
-
-
-
-# @@@@ SECOND VERSION @@@@
-
-
 import tkinter as tk
 from tkinter import filedialog, messagebox, Label, Button
 from PIL import Image, ImageTk
@@ -26,7 +20,7 @@ capture_max_seconds = 0
 cap = None
 capture_started = False
 capture_start_time = 0
-capture_frame = None  # Initialize capture_frame globall
+capture_frame = None  # Initialize capture_frame globally
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -47,9 +41,6 @@ net = cv2.dnn.readNet('face_detector/deploy.prototxt', 'face_detector/res10_300x
 pca = PCA(svd_solver="randomized", n_components=args["num_components"], whiten=True)
 le = LabelEncoder()
 model = None
-
-
-
 
 # Function to start capturing images
 def start_capture():
@@ -91,16 +82,29 @@ def capture_images():
         cv2.imwrite(image_path, frame)
 
         # Update GUI image display
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(image)
-        image = ImageTk.PhotoImage(image)
+
+        # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # image = Image.fromarray(image)
+        # image = ImageTk.PhotoImage(image)
+        
+        # if panel is None:
+        #     panel = Label(root, image=image)
+        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+        # else:
+        #     panel.configure(image=image)
+        #     panel.image = image
+                # Update the panel with the new image
+        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image_rgb = Image.fromarray(image_rgb)
+        image_rgb = ImageTk.PhotoImage(image_rgb)
         
         if panel is None:
-            panel = Label(root, image=image)
+            panel = Label(root, image=image_rgb)
+            panel.image = image_rgb
             panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
         else:
-            panel.configure(image=image)
-            panel.image = image
+            panel.configure(image=image_rgb)
+            panel.image = image_rgb
 
         capture_count -= 1
         if capture_count <= 0 or (time.time() - capture_start_time) >= capture_max_seconds:
@@ -269,13 +273,16 @@ def load_image():
 
 # Function to go back to the home screen
 def go_back():
-    global panel
+    global panel, capture_frame
 
-    
-    
+    # Check if capture frame already exists, do nothing if it does
+    if capture_frame:
+        capture_frame.destroy()
+        capture_frame = None  # Reset the global variable
+
     if panel:
         panel.image = None
-    
+
     # Reset the result label text
     result_label.config(text=" Welcome to the Home page :) ")
 
@@ -286,7 +293,7 @@ def go_back():
 
     # Hide back button
     back_btn.pack_forget()
-    
+
     # Forget the capture details entry widgets
     name_entry.pack_forget()
     count_entry.pack_forget()
@@ -298,13 +305,11 @@ def go_back():
 
 def start_capture_gui():
     global panel, capture_frame
-    
+
     # Check if capture frame already exists, do nothing if it does
     if capture_frame:
         capture_frame.destroy()
         capture_frame = None  # Reset the global variable
-    
-    
         
     result_label.config(text=" Enter details for capturing images ")
 
@@ -331,7 +336,6 @@ def start_capture_gui():
 
     start_capture_btn = tk.Button(capture_frame, text="Start Capture", command=start_capture)
     start_capture_btn.pack(anchor="w", padx=10, pady=10)
-
 
     back_btn.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10")
 
@@ -373,5 +377,4 @@ result_label.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10"
 
 # Start the GUI main loop
 root.mainloop()
-
 
