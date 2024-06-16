@@ -122,19 +122,24 @@ def getVals(img_por,s2,s3):
             idx=idx+1
     return temp.reshape((1,sd*256))
 
-def predict_lbph(input_image,recognizer,labels):
-    (s1,s2)=input_image.shape
-    (d1,d2)=recognizer.shape
-    temp=numpy.zeros((1,s1,s2))
-    temp[0]=input_image
-    input_histogramed=train_lbph(temp)
-    (minval,index,distance)=(10000,0,0)
+def predict_lbph(input_image, recognizer, labels, max_distance=10000):
+    (s1, s2) = input_image.shape
+    (d1, d2) = recognizer.shape
+    temp = numpy.zeros((1, s1, s2))
+    temp[0] = input_image
+    input_histogramed = train_lbph(temp)
+    (minval, index, distance) = (float('inf'), 0, 0)
     for i in range(d1):
-        distance=numpy.linalg.norm(recognizer[i,:]-input_histogramed)
-        if distance<minval:
-            index=i
-            minval=distance
-    return (labels[index],minval)
+        distance = numpy.linalg.norm(recognizer[i, :] - input_histogramed)
+        if distance < minval:
+            index = i
+            minval = distance
+    confidence = calculate_confidence(minval, max_distance)
+    return (labels[index], confidence)
+
+def calculate_confidence(minval, max_distance=10000):
+    return max(0, min(1, 1 - (minval / max_distance)))
+
 
 def predict_lbph_multi(input_image,recognizer,labels):
     (s3,s1,s2)=input_image.shape
