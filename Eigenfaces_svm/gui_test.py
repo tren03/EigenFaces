@@ -280,7 +280,7 @@ def train_model():
         start = time.time()
         trainX = pca.fit_transform(trainX)
         end = time.time()
-        print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start))
+        print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
 
         print("[INFO] training SVM classifier...")
         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
