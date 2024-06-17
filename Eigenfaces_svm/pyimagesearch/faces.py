@@ -36,6 +36,7 @@ def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
         return lighting_effect.astype(np.uint8)
 
     imagePaths = list(paths.list_images(inputPath))
+    print(len(imagePaths))
     names = [p.split(os.path.sep)[-2] for p in imagePaths]
     (names, counts) = np.unique(names, return_counts=True)
     names = names.tolist()
@@ -77,6 +78,8 @@ def load_face_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
 
     faces = np.array(faces)
     labels = np.array(labels)
+
+    print(len(faces))
 
     return faces, labels
 

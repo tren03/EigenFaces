@@ -45,7 +45,133 @@ pca = PCA(svd_solver="randomized", n_components=args["num_components"], whiten=T
 le = LabelEncoder()
 model = None
 
-# Function to start capturing images
+# # Function to start capturing images
+# def start_capture():
+#     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
+    
+#     # Reset capture variables
+#     capture_name = name_entry.get()
+#     capture_count = int(count_entry.get())
+#     capture_max_seconds = int(max_seconds_entry.get())
+#     capture_started = True
+#     capture_start_time = time.time()
+
+#     # Create directory if not exists
+#     faces_root = "../Faces"
+#     os.chdir(faces_root)
+#     if not os.path.exists(capture_name):
+#         os.mkdir(capture_name)
+#     os.chdir(capture_name)
+
+#     # Start capturing images
+#     cap = cv2.VideoCapture(0)
+#     if not cap.isOpened():
+#         messagebox.showerror("Error", "Failed to open camera.")
+#         return
+
+#     capture_images()
+
+# # Function to capture images
+# def capture_images():
+#     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time, panel
+    
+#     while capture_started:
+#         ret, frame = cap.read()
+#         if not ret:
+#             messagebox.showerror("Error", "Failed to capture image from camera.")
+#             break
+        
+#         image_path = os.path.join(os.getcwd(), f"image_{capture_count}.jpg")
+#         cv2.imwrite(image_path, frame)
+
+#         # Update GUI image display
+
+#         # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#         # image = Image.fromarray(image)
+#         # image = ImageTk.PhotoImage(image)
+        
+#         # if panel is None:
+#         #     panel = Label(root, image=image)
+#         #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+#         # else:
+#         #     panel.configure(image=image)
+#         #     panel.image = image
+#                 # Update the panel with the new image
+#         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#         image_rgb = Image.fromarray(image_rgb)
+#         image_rgb = ImageTk.PhotoImage(image_rgb)
+        
+#         if panel is None:
+#             panel = Label(root, image=image_rgb)
+#             panel.image = image_rgb
+#             panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+#         else:
+#             panel.configure(image=image_rgb)
+#             panel.image = image_rgb
+
+#         capture_count -= 1
+#         if capture_count <= 0 or (time.time() - capture_start_time) >= capture_max_seconds:
+#             stop_capture()
+#             break
+
+#         time.sleep(1)  # Capture image every second
+
+# # Function to stop capturing images
+# def stop_capture():
+#     global cap, capture_started
+#     capture_started = False
+#     if cap is not None:
+#         cap.release()
+#     cv2.destroyAllWindows()
+
+# # Function to train the SVM model on the dataset
+# def train_model():
+#     global pca, le, model
+    
+#     # if os.path.exists('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm/svm_model.pkl'):
+#     #     os.remove('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm/svm_model.pkl')
+#     #     print("model has been deleted.")
+#     # Load data
+#     print("[INFO] loading dataset...")
+#     try:
+#         print(args["input"])
+#         (faces, labels) = load_face_dataset(args["input"], net,
+#                                             minConfidence=args["confidence"], minSamples=20)
+#         print("[INFO] {} images in dataset".format(len(faces)))
+
+#         # Flatten all 2D faces into a 1D list of pixel intensities
+#         pcaFaces = np.array([f.flatten() for f in faces])
+
+#         # Encode the string labels as integers
+#         labels = le.fit_transform(labels)
+
+#         # Construct our training and testing split
+#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25,
+#                                 stratify=labels, random_state=42)
+#         (origTrain, origTest, trainX, testX, trainY, testY) = split
+
+#         print("[INFO] creating eigenfaces...")
+#         start = time.time()
+#         trainX = pca.fit_transform(trainX)
+#         end = time.time()
+#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start))
+
+#         print("[INFO] training SVM classifier...")
+#         global model
+#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
+#         model.fit(trainX, trainY)
+
+#         filename = 'svm_model.pkl'
+#         with open(filename, 'wb') as file:
+#             pickle.dump(model, file)
+#             print(f"Saved the model to {filename}")
+        
+#         messagebox.showinfo("Training Complete", "SVM Model trained successfully!")
+
+#     except Exception as e:
+#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
+
+
 def start_capture():
     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
     
@@ -58,7 +184,10 @@ def start_capture():
 
     # Create directory if not exists
     faces_root = "../Faces"
+    if not os.path.exists(faces_root):
+        os.mkdir(faces_root)
     os.chdir(faces_root)
+    
     if not os.path.exists(capture_name):
         os.mkdir(capture_name)
     os.chdir(capture_name)
@@ -84,19 +213,7 @@ def capture_images():
         image_path = os.path.join(os.getcwd(), f"image_{capture_count}.jpg")
         cv2.imwrite(image_path, frame)
 
-        # Update GUI image display
-
-        # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # image = Image.fromarray(image)
-        # image = ImageTk.PhotoImage(image)
-        
-        # if panel is None:
-        #     panel = Label(root, image=image)
-        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-        # else:
-        #     panel.configure(image=image)
-        #     panel.image = image
-                # Update the panel with the new image
+        # Update the panel with the new image
         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image_rgb = Image.fromarray(image_rgb)
         image_rgb = ImageTk.PhotoImage(image_rgb)
@@ -128,12 +245,21 @@ def stop_capture():
 def train_model():
     global pca, le, model
     
+    # Delete existing model if it exists
+    if os.path.exists('svm_model.pkl'):
+        os.remove('svm_model.pkl')
+        print("Existing model has been deleted.")
+    
     # Load data
     print("[INFO] loading dataset...")
     try:
-        print(args["input"])
-        (faces, labels) = load_face_dataset(args["input"], net,
-                                            minConfidence=args["confidence"], minSamples=20)
+        faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
+
+        (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
+        
+        if len(faces) == 0:
+            raise Exception("No faces found in dataset.")
+
         print("[INFO] {} images in dataset".format(len(faces)))
 
         # Flatten all 2D faces into a 1D list of pixel intensities
@@ -142,9 +268,12 @@ def train_model():
         # Encode the string labels as integers
         labels = le.fit_transform(labels)
 
+        # Check if there are enough samples to split
+        if len(labels) < 2:
+            raise Exception("Not enough samples to split into training and testing sets.")
+
         # Construct our training and testing split
-        split = train_test_split(faces, pcaFaces, labels, test_size=0.25,
-                                stratify=labels, random_state=42)
+        split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
         (origTrain, origTest, trainX, testX, trainY, testY) = split
 
         print("[INFO] creating eigenfaces...")
@@ -154,10 +283,10 @@ def train_model():
         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start))
 
         print("[INFO] training SVM classifier...")
-        global model
         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
         model.fit(trainX, trainY)
 
+        os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
         filename = 'svm_model.pkl'
         with open(filename, 'wb') as file:
             pickle.dump(model, file)
@@ -277,6 +406,7 @@ def load_image():
 
 # Function to go back to the home screen
 def go_back():
+
     global panel, capture_frame,image_frame,image_label,tk_image,live_feed
 
     #Check if capture frame already exists, do nothing if it does
@@ -332,7 +462,7 @@ def start_capture_gui():
     name_entry = tk.Entry(capture_frame, width=30)
     name_entry.pack(anchor="w", padx=10, pady=5)
 
-    count_label = tk.Label(capture_frame, text="Number of Images:")
+    count_label = tk.Label(capture_frame, text="Number of Images (min - 15):")
     count_label.pack(anchor="w", padx=10, pady=5)
     count_entry = tk.Entry(capture_frame, width=30)
     count_entry.pack(anchor="w", padx=10, pady=5)
@@ -452,8 +582,9 @@ def show_constant_image_live_feed():
     # Schedule the function to be called again after 10 milliseconds
     root.after(10, show_constant_image_live_feed)
 
+
 def load_image_onto_image_frame_live_feed(image):
-    global image_label, tk_image
+    global image_label, tk_image, image_frame
 
     # Convert the image to a format that Tkinter can use
     pil_image = Image.fromarray(image)
@@ -481,10 +612,14 @@ def start_camera_feed():
     show_constant_image_live_feed()  # Start the image capture and display loop
 
 def clear_image_frame():
-    global image_label
+    global image_label, image_frame
     if image_label is not None:
-        image_label.config(image='')
-        image_label.image = None
+        image_label.destroy()
+        image_label = None
+
+    if image_frame is not None:
+        image_frame.destroy()
+        image_frame = None
 
 def stop_camera_feed():
     global capture_running, cap
@@ -540,4 +675,7 @@ result_label.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10"
 
 # Start the GUI main loop
 root.mainloop()
+
+
+
 
