@@ -1,9 +1,3 @@
-
-
-
-# @@@@ SECOND VERSION @@@@
-
-
 import tkinter as tk
 from tkinter import filedialog, messagebox, Label, Button
 from PIL import Image, ImageTk
@@ -26,8 +20,11 @@ capture_max_seconds = 0
 cap = None
 capture_started = False
 capture_start_time = 0
-capture_frame = None  # Initialize capture_frame globall
-
+capture_frame = None  # Initialize capture_frame globally
+image_frame=None
+live_feed=False
+image_label = None
+tk_image = None
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
@@ -47,9 +44,6 @@ net = cv2.dnn.readNet('face_detector/deploy.prototxt', 'face_detector/res10_300x
 pca = PCA(svd_solver="randomized", n_components=args["num_components"], whiten=True)
 le = LabelEncoder()
 model = None
-
-
-
 
 # Function to start capturing images
 def start_capture():
@@ -91,16 +85,29 @@ def capture_images():
         cv2.imwrite(image_path, frame)
 
         # Update GUI image display
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(image)
-        image = ImageTk.PhotoImage(image)
+
+        # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # image = Image.fromarray(image)
+        # image = ImageTk.PhotoImage(image)
+        
+        # if panel is None:
+        #     panel = Label(root, image=image)
+        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+        # else:
+        #     panel.configure(image=image)
+        #     panel.image = image
+                # Update the panel with the new image
+        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image_rgb = Image.fromarray(image_rgb)
+        image_rgb = ImageTk.PhotoImage(image_rgb)
         
         if panel is None:
-            panel = Label(root, image=image)
+            panel = Label(root, image=image_rgb)
+            panel.image = image_rgb
             panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
         else:
-            panel.configure(image=image)
-            panel.image = image
+            panel.configure(image=image_rgb)
+            panel.image = image_rgb
 
         capture_count -= 1
         if capture_count <= 0 or (time.time() - capture_start_time) >= capture_max_seconds:
@@ -162,7 +169,7 @@ def train_model():
         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
 
 # Function to predict a single face from an image
-def predict_single_face(image_path):
+def predict_single_face_with_path(image_path):
     global model, pca, le, net
     
     if model is None:
@@ -227,7 +234,7 @@ def load_image():
             return
         
         # Perform face recognition on the selected image
-        predicted_name, predicted_proba, box = predict_single_face(path)
+        predicted_name, predicted_proba, box = predict_single_face_with_path(path)
         
         if predicted_name is not None:
             result_text = f"Predicted Name: {predicted_name}\nProbability: {np.max(predicted_proba):.2f}"
@@ -249,33 +256,40 @@ def load_image():
             image_rgb = cv2.resize(image_rgb, (max_width, new_height))
         
         # Convert the image to RGB for Tkinter display
-        image_rgb = Image.fromarray(image_rgb)
-        image_rgb = ImageTk.PhotoImage(image_rgb)
+        # image_rgb = Image.fromarray(image_rgb)
+        # image_rgb = ImageTk.PhotoImage(image_rgb)
 
+        load_image_onto_image_frame(image_rgb)
         # Update the panel with the new image
-        if panel is None:
-            panel = Label(image=image_rgb)
-            panel.image = image_rgb
-            panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-        else:
-            panel.config(image=image_rgb)
-            panel.image = image_rgb
+        # if panel is None:
+        #     panel = Label(image=image_rgb)
+        #     panel.image = image_rgb
+        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
+        # else:
+        #     panel.config(image=image_rgb)
+        #     panel.image = image_rgb
 
         # Show the back button
-        back_btn.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10")
-        
+        back_btn.pack(side="top", padx="10", pady="10")
+
         # Hide the other buttons if necessary
-        btn.pack_forget()
+        # btn.pack_forget()
 
 # Function to go back to the home screen
 def go_back():
-    global panel
+    global panel, capture_frame,image_frame,image_label,tk_image,live_feed
 
-    
-    
+    #Check if capture frame already exists, do nothing if it does
+    if capture_frame:
+        capture_frame.destroy()
+        capture_frame = None  # Reset the global variable
+    if image_frame:
+        image_frame.destroy()
+        image_frame=None
     if panel:
         panel.image = None
-    
+    clear_image_frame()
+
     # Reset the result label text
     result_label.config(text=" Welcome to the Home page :) ")
 
@@ -285,31 +299,30 @@ def go_back():
     capture_btn.pack(side="top", padx="10", pady="10")
 
     # Hide back button
-    back_btn.pack_forget()
-    
+    # back_btn.pack_forget()
+
     # Forget the capture details entry widgets
-    name_entry.pack_forget()
-    count_entry.pack_forget()
-    max_seconds_entry.pack_forget()
-    name_label.pack_forget()
-    count_label.pack_forget()
-    max_seconds_label.pack_forget()
-    start_capture_btn.pack_forget()
+    # name_entry.pack_forget()
+    # count_entry.pack_forget()
+    # max_seconds_entry.pack_forget()
+    # name_label.pack_forget()
+    # count_label.pack_forget()
+    # max_seconds_label.pack_forget()
+    # start_capture_btn.pack_forget()
+
 
 def start_capture_gui():
     global panel, capture_frame
-    
+
     # Check if capture frame already exists, do nothing if it does
     if capture_frame:
         capture_frame.destroy()
-        capture_frame = None  # Reset the global variable
-    
-    
-        
+        capture_frame = None
+
     result_label.config(text=" Enter details for capturing images ")
 
     # Create a new frame for capturing images
-    capture_frame = tk.Frame(root)
+    capture_frame = tk.Frame(root,bd=5, relief="solid", borderwidth=2)
     capture_frame.pack(side="left", fill="y", padx=10, pady=10)
 
     # Capture details entry
@@ -332,10 +345,156 @@ def start_capture_gui():
     start_capture_btn = tk.Button(capture_frame, text="Start Capture", command=start_capture)
     start_capture_btn.pack(anchor="w", padx=10, pady=10)
 
+    back_btn.pack(side="top", padx="10", pady="10")
 
-    back_btn.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10")
+def load_image_onto_image_frame(image):
+    global image_frame, image_label, tk_image
 
-# Initialize the GUI window
+    if image_frame:
+        image_frame.destroy()
+        image_frame = None
+
+    image_frame = tk.Frame(root, bd=5, relief="solid", borderwidth=2)
+    image_frame.pack(side="left", fill="y", padx=10, pady=10)
+
+    # Convert the image to a format that Tkinter can use
+    pil_image = Image.fromarray(image)
+    tk_image = ImageTk.PhotoImage(pil_image)
+
+    # If image label already exists, update its image
+
+    # Create a label to display the image
+    image_label = tk.Label(image_frame, image=tk_image)
+    image_label.image = tk_image  # Keep a reference to avoid garbage collection
+
+    # Pack the label into the frame
+    image_label.pack()
+    # Keep a reference to the image to avoid garbage collection
+
+def predict_single_face_with_image(image):
+    global model, pca, le, net
+    
+    if model is None:
+        print("Error: Model not trained yet.")
+        return None, None, None
+
+    # Perform face detection
+    boxes = detect_faces(net, image)
+
+    # Assuming there's only one face in the test image
+    if len(boxes) == 1:
+        # Extract the face ROI
+        (startX, startY, endX, endY) = boxes[0]
+        faceROI = image[startY:endY, startX:endX]
+
+        # Resize the face ROI
+        faceROI = cv2.resize(faceROI, (47, 62))
+
+        # Convert the face ROI to grayscale
+        gray_face = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
+
+        # Flatten the grayscale face ROI
+        flattened_face = gray_face.flatten()
+
+        # Perform PCA transformation
+        pca_face = pca.transform(flattened_face.reshape(1, -1))
+
+        # Perform face recognition prediction
+        prediction = model.predict(pca_face)
+        predicted_name = le.inverse_transform(prediction)[0]
+
+        # Get the predicted probabilities
+        probabilities = model.predict_proba(pca_face)
+
+        return predicted_name, probabilities, (startX, startY, endX, endY)
+    else:
+        print("Error: Detected more than one face in the test image.")
+        return None, None, None
+
+def show_constant_image_live_feed():
+    global capture_running, cap
+
+    if not capture_running:
+        return
+
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to capture image from camera")
+        return
+
+    # Convert the frame to RGB
+    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    predicted_name, predicted_proba, box = predict_single_face_with_image(image_rgb)
+
+    if predicted_name is not None:
+        result_text = f"Predicted Name: {predicted_name}\nProbability: {np.max(predicted_proba):.2f}"
+        result_label.config(text=result_text)
+
+        # Draw the bounding box and predicted name on the image
+        (startX, startY, endX, endY) = box
+        cv2.putText(image_rgb, predicted_name, (startX, startY - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        cv2.rectangle(image_rgb, (startX, startY), (endX, endY), (0, 255, 0), 2)
+    else:
+        result_label.config(text="No face detected or multiple faces detected.")
+
+    # Resize the image to fit within the GUI window if necessary
+    max_width = 800
+    if image_rgb.shape[1] > max_width:
+        scale_factor = max_width / image_rgb.shape[1]
+        new_height = int(image_rgb.shape[0] * scale_factor)
+        image_rgb = cv2.resize(image_rgb, (max_width, new_height))
+
+    
+    load_image_onto_image_frame_live_feed(image_rgb)
+    
+    # Schedule the function to be called again after 10 milliseconds
+    root.after(10, show_constant_image_live_feed)
+
+def load_image_onto_image_frame_live_feed(image):
+    global image_label, tk_image
+
+    # Convert the image to a format that Tkinter can use
+    pil_image = Image.fromarray(image)
+    tk_image = ImageTk.PhotoImage(pil_image)
+
+    if image_label is None:
+        # Create the frame and label if they do not exist
+        image_frame = tk.Frame(root, bd=5, relief="solid", borderwidth=2)
+        image_frame.pack(side="left", fill="y", padx=10, pady=10)
+        image_label = tk.Label(image_frame)
+        image_label.pack()
+
+    # Update the image in the label
+    image_label.configure(image=tk_image)
+    image_label.image = tk_image  # Keep a reference to avoid garbage collection
+ 
+def start_camera_feed():
+    global cap, capture_running
+    cap = cv2.VideoCapture(0)  # Start video capture from the first camera
+    if not cap.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    capture_running = True
+    show_constant_image_live_feed()  # Start the image capture and display loop
+
+def clear_image_frame():
+    global image_label
+    if image_label is not None:
+        image_label.config(image='')
+        image_label.image = None
+
+def stop_camera_feed():
+    global capture_running, cap
+    capture_running = False
+    if cap:
+        cap.release()
+        cap = None
+    cv2.destroyAllWindows()
+    clear_image_frame()
+
 root = tk.Tk()
 root.title("Face Recognition")
 
@@ -349,7 +508,7 @@ root.minsize(starting_width, starting_height)
 panel = None
 
 # Create a frame for the buttons on the right side
-button_frame = tk.Frame(root)
+button_frame = tk.Frame(root,bd=5, relief="solid", borderwidth=2)
 button_frame.pack(side="right", fill="y", padx=10, pady=10)
 
 # Create a button to load an image
@@ -364,8 +523,16 @@ train_btn.pack(side="top", padx="10", pady="10")
 capture_btn = Button(button_frame, text="Get New Images", command=start_capture_gui)
 capture_btn.pack(side="top", padx="10", pady="10")
 
+start_button = tk.Button(button_frame, text="Start Camera", command=start_camera_feed)
+start_button.pack(side="top", padx="10", pady="10")
+
+stop_button = tk.Button(button_frame, text="Stop Camera", command=stop_camera_feed)
+stop_button.pack(side="top", padx="10", pady="10")
+
 # Create a button to go back to the home screen
 back_btn = Button(button_frame, text="Back", command=go_back)
+back_btn.pack(side="top", padx="10", pady="10")
+
 
 # Create a label to display the result
 result_label = Label(root, text=" Welcome to the Home page :)  ")
@@ -373,5 +540,4 @@ result_label.pack(side="bottom", fill="both", expand="yes", padx="10", pady="10"
 
 # Start the GUI main loop
 root.mainloop()
-
 
