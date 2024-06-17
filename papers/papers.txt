@@ -1,0 +1,4 @@
+https://arxiv.org/pdf/1910.08470 - Illumination-Based Data Augmentation for Robust
+Background Subtraction
+
+https://arxiv.org/abs/1704.04326 - Dataset Augmentation for Pose and Lighting Invariant Face Recognition
