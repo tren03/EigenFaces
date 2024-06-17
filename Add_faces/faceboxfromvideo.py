@@ -12,6 +12,7 @@ import os
 import sys
 import numpy as np
 import joblib
+
 # from  ..LBPH_algo.program_files import lbph as lb
 # from LBPH_algo.program_files import lbph as lb
 sys.path.append("..")
@@ -75,6 +76,7 @@ while True:
         faceROI=frame[startY:endY,startX:endX]
         faceROI=cv2.resize(faceROI,(68,68))
         faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
+        cv2.imshow("modified",faceROI)
         # faces.append(faceROI)
         #create a new image or modify the same if no output is specified with a rectangle (image,startcoords,endcoords,color_of_box,thickness)
 
@@ -82,7 +84,7 @@ while True:
         (prediction,confidence)=lb.predict_lbph(faceROI,trained_recogniser,trained_labels)
         #puts text on the screen (image,text,coords,font,fontscale,color)
         predName = le.inverse_transform([prediction])[0]
-        cv2.putText(frame,f"{predName}",(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0,255,0))
+        cv2.putText(frame,f"{predName},{confidence}",(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.9,(0,255,0))
     cv2.imshow("Face",frame)
     #waits 1 millisec for q to be pressed, if pressed then brek out and clsoe the windows
     if cv2.waitKey(1) & 0xFF == ord('q'):
