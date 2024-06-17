@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import argparse
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import RandomForestClassifier
-
+import lbph as lb
 
 
 # Global variables for capturing images
@@ -30,8 +30,10 @@ live_feed=False
 image_label = None
 tk_image = None
 random_forest_model = None
-
-
+lbph_recognizer=None
+trainYlbph=None
+vishnudir='/home/bmsce/Projects/EigenFaces'
+sriramdir='/home/sriram/Desktop/programfiles/programmingfiles/EigenFaces'
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
@@ -115,7 +117,7 @@ def stop_capture():
 
 # Function to train the SVM model on the dataset
 def train_model():
-    global pca, le, model, random_forest_model
+    global pca, le, model, random_forest_model,lbph_recognizer,trainYlbph
     
     # Delete existing model if it exists
     if os.path.exists('svm_model.pkl'):
@@ -125,11 +127,21 @@ def train_model():
     if os.path.exists('random_forest_model.pkl'):
         os.remove('random_forest_model.pkl')
         print("Existing random model has been deleted.")
-    
+
+    if os.path.exists('lbph_algo_model.pkl'):
+        os.remove('lbph_algo_model.pkl')
+        print("Existing lbph  model has been deleted.")
+
+    if os.path.exists('labels.pkl'):
+        os.remove('labels.pkl')
+        print("Existing labels have been deleted.")
+#remove lbph classifier here 
+#remove the labels .npy also 
+
     # Load data
     print("[INFO] loading dataset...")
     try:
-        faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
+        faces_root = sriramdir+'/Faces'
 
         (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
         
@@ -144,6 +156,9 @@ def train_model():
         # Encode the string labels as integers
         labels = le.fit_transform(labels)
 
+#perform pre processing i.e convert all the faces into proper size
+# train test split for lbph 
+# write the model and the labels respectively into the file  
         # Check if there are enough samples to split
         if len(labels) < 2:
             raise Exception("Not enough samples to split into training and testing sets.")
@@ -151,6 +166,9 @@ def train_model():
         # Construct our training and testing split
         split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
         (origTrain, origTest, trainX, testX, trainY, testY) = split
+
+        split_lbph=train_test_split(faces,labels,test_size=0.25, stratify=labels, random_state=42)
+        (trainXlbph, testXlbph, trainYlbph, testYlbph) = split_lbph
 
         print("[INFO] creating eigenfaces...")
         start = time.time()
@@ -162,13 +180,20 @@ def train_model():
 
         
         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
+        print("svc")
         model = BaggingClassifier(model, n_estimators=10, random_state=42)
-        model.fit(trainX, trainY)
+        print("bagging")
 
+        model.fit(trainX, trainY)
+        print("not done")
         random_forest_model = RandomForestClassifier(n_estimators=100, random_state=42)
+        print("rfc")
         random_forest_model.fit(trainX, trainY)
 
-        os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
+        print("lbph")
+        lbph_recognizer=lb.train_lbph(trainXlbph)
+
+        os.chdir(sriramdir+'/Eigenfaces_svm')
         filename = 'random_forest_model.pkl'
         with open(filename, 'wb') as file:
             pickle.dump(random_forest_model, file)
@@ -177,17 +202,29 @@ def train_model():
         filename = 'svm_model.pkl'
         with open(filename, 'wb') as file:
             pickle.dump(random_forest_model, file)
-            print(f"Saved the svc to {filename}")
+            print(f"Saved the rfc to {filename}")
+
+        filename = 'lbph_algo_model.pkl'
+        with open(filename, 'wb') as file:
+            pickle.dump(lbph_recognizer, file)
+            print(f"Saved the lbph to {filename}")
+        
+        filename = 'labels.pkl'
+        with open(filename, 'wb') as file:
+            pickle.dump(trainYlbph, file)
+            print(f"Saved the ytrain to {filename}")        
+
         
         messagebox.showinfo("Training Complete", "Random Forest Model and svc trained successfully!")
 
     except Exception as e:
         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
 
-
+def lbph_algo():
+    return
 # Function to predict a single face from an image
 def predict_single_face_with_path(image_path):
-    global random_forest_model,model, pca, le, net
+    global random_forest_model,model, pca, le, net,trainYlbph,lbph_recognizer
     
     if model is None:
         print("Error: Model not trained yet.")
@@ -230,9 +267,12 @@ def predict_single_face_with_path(image_path):
         probabilities_random_forest = random_forest_model.predict_proba(pca_face)        
         probabilities = model.predict_proba(pca_face)
 
+        #get the probabilities for lbph 
+        (prediction_lbph_before_le,conf_lbph)=lb.predict_lbph(gray_face,lbph_recognizer,trainYlbph)
+        prediction_lbph = le.inverse_transform([prediction_lbph_before_le])[0]
         print(f"random forest prediction = {predicted_name_random} and prob = {probabilities_random_forest}")
 
-        return predicted_name_random,probabilities_random_forest,predicted_name, probabilities, (startX, startY, endX, endY)
+        return predicted_name_random,probabilities_random_forest,predicted_name, probabilities, (startX, startY, endX, endY),prediction_lbph,conf_lbph
     else:
         print("Error: Detected more than one face in the test image.")
         return None, None, None
@@ -253,17 +293,19 @@ def load_image():
         
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_rgb_random = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+        image_rgb_lbph=cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        #check for lbph 
         # Check if model is trained
         if model is None:
             messagebox.showerror("Error", "Model not trained yet. Please train the model first.")
             return
         
         # Perform face recognition on the selected image
-        predicted_name_random,predicted_proba_random,predicted_name, predicted_proba, box = predict_single_face_with_path(path)
+        predicted_name_random,predicted_proba_random,predicted_name, predicted_proba, box ,prediction_lbph,conf_lbph= predict_single_face_with_path(path)
         
         if predicted_name is not None:
-            result_text = f"Predicted Name: {predicted_name} and Probability: {np.max(predicted_proba):.2f} for SVC \n Predicted Name: {predicted_name_random} and Probability: {np.max(predicted_proba_random):.2f} for Random forest"
+            result_text = f"Predicted Name: {predicted_name} and Probability: {np.max(predicted_proba):.2f} for SVC \n Predicted Name: {predicted_name_random} and Probability: {np.max(predicted_proba_random):.2f} for Random forest \n  Predicted Name: {prediction_lbph} and Probability: {conf_lbph:.2f} for LBPH"
             result_label.config(text=result_text)
 
             # Draw the bounding box and predicted name on the image
@@ -276,23 +318,34 @@ def load_image():
             cv2.putText(image_rgb_random, predicted_name_random, (startX, startY - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.rectangle(image_rgb_random, (startX, startY), (endX, endY), (0, 255, 0), 2)
+
+            (startX, startY, endX, endY) = box
+            cv2.putText(image_rgb_lbph, prediction_lbph, (startX, startY - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.rectangle(image_rgb_lbph, (startX, startY), (endX, endY), (0, 255, 0), 2)
         else:
             result_label.config(text="No face detected or multiple faces detected.")
         
         # Resize the image to fit within the GUI window if necessary
-        max_width = 800
+        max_width = 300
         if image_rgb.shape[1] > max_width:
             scale_factor = max_width / image_rgb.shape[1]
             new_height = int(image_rgb.shape[0] * scale_factor)
             image_rgb = cv2.resize(image_rgb, (max_width, new_height))
 
-        max_width = 800
+        max_width = 300
         if image_rgb_random.shape[1] > max_width:
             scale_factor = max_width / image_rgb_random.shape[1]
             new_height = int(image_rgb_random.shape[0] * scale_factor)
             image_rgb_random = cv2.resize(image_rgb_random, (max_width, new_height))
 
-        load_image_onto_image_frame(image_rgb,image_rgb_random)
+        max_width = 300
+        if image_rgb_lbph.shape[1] > max_width:
+            scale_factor = max_width / image_rgb_lbph.shape[1]
+            new_height = int(image_rgb_lbph.shape[0] * scale_factor)
+            image_rgb_lbph = cv2.resize(image_rgb_lbph, (max_width, new_height))
+
+        load_image_onto_image_frame(image_rgb,image_rgb_random,image_rgb_lbph)
        
         back_btn.pack(side="top", padx="10", pady="10")
 
@@ -385,7 +438,7 @@ def start_capture_gui():
 
     back_btn.pack(side="top", padx="10", pady="10")
 
-def load_image_onto_image_frame(image, image_rgb_random):
+def load_image_onto_image_frame(image, image_rgb_random,image_rgb_lbph):
     global image_frame, image_label, tk_image, image_label_rgb_random, tk_image_rgb_random
 
     # Destroy the existing image frame if it exists
@@ -411,13 +464,19 @@ def load_image_onto_image_frame(image, image_rgb_random):
     pil_image_rgb_random.thumbnail((max_width, max_height), Image.LANCZOS)
     tk_image_rgb_random = ImageTk.PhotoImage(pil_image_rgb_random)
 
+    pil_image_rgb_lbph = Image.fromarray(image_rgb_lbph)
+    pil_image_rgb_lbph.thumbnail((max_width, max_height), Image.LANCZOS)
+    tk_image_rgb_lbph = ImageTk.PhotoImage(pil_image_rgb_lbph)
+
     # Get dimensions of the images
     width1, height1 = pil_image.size
     width2, height2 = pil_image_rgb_random.size
+    width3, height3 = pil_image_rgb_lbph.size
+
 
     # Dynamically adjust the window width to fit both images side by side
-    total_width = width1 + width2 + 300 # 40 for padding and borders
-    root.geometry(f"{total_width}x{max(height1, height2) + 100}")  # 100 for padding and borders
+    total_width = width1 + width2 +width3+ 300 # 40 for padding and borders
+    root.geometry(f"{total_width}x{max(height1, height2,height3) + 100}")  # 100 for padding and borders
 
     # Create a label to display the first image
     image_label = tk.Label(image_frame, image=tk_image)
@@ -427,9 +486,15 @@ def load_image_onto_image_frame(image, image_rgb_random):
     image_label_rgb_random = tk.Label(image_frame, image=tk_image_rgb_random)
     image_label_rgb_random.image = tk_image_rgb_random  # Keep a reference to avoid garbage collection
 
+    # Create a label to display the second image
+    image_label_rgb_lbph = tk.Label(image_frame, image=tk_image_rgb_lbph)
+    image_label_rgb_lbph.image = tk_image_rgb_lbph  # Keep a reference to avoid garbage collection
+
     # Pack the labels into the frame side by side
     image_label.pack(side="left", padx=10, pady=10)
     image_label_rgb_random.pack(side="left", padx=10, pady=10)
+    image_label_rgb_lbph.pack(side="left", padx=10, pady=10)
+
 
 
 
