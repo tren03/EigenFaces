@@ -53,68 +53,7 @@ le = LabelEncoder()
 model = None
 
 
-
-# def start_capture():
-#     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
-    
-#     # Reset capture variables
-#     capture_name = name_entry.get()
-#     capture_count = int(count_entry.get())
-#     capture_max_seconds = int(max_seconds_entry.get())
-#     capture_started = True
-#     capture_start_time = time.time()
-
-#     # Create directory if not exists
-#     faces_root = "../Faces"
-#     if not os.path.exists(faces_root):
-#         os.mkdir(faces_root)
-#     os.chdir(faces_root)
-    
-#     if not os.path.exists(capture_name):
-#         os.mkdir(capture_name)
-#     os.chdir(capture_name)
-
-#     # Start capturing images
-#     cap = cv2.VideoCapture(0)
-#     if not cap.isOpened():
-#         messagebox.showerror("Error", "Failed to open camera.")
-#         return
-
-#     capture_images()
-
 # # Function to capture images
-# def capture_images():
-#     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time, panel
-    
-#     while capture_started:
-#         ret, frame = cap.read()
-#         if not ret:
-#             messagebox.showerror("Error", "Failed to capture image from camera.")
-#             break
-        
-#         image_path = os.path.join(os.getcwd(), f"image_{capture_count}.jpg")
-#         cv2.imwrite(image_path, frame)
-
-#         # Update the panel with the new image
-#         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#         image_rgb = Image.fromarray(image_rgb)
-#         image_rgb = ImageTk.PhotoImage(image_rgb)
-        
-#         if panel is None:
-#             panel = Label(root, image=image_rgb)
-#             panel.image = image_rgb
-#             panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-#         else:
-#             panel.configure(image=image_rgb)
-#             panel.image = image_rgb
-
-#         capture_count -= 1
-#         if capture_count <= 0 or (time.time() - capture_start_time) >= capture_max_seconds:
-#             stop_capture()
-#             break
-
-#         time.sleep(1)  # Capture image every second
-
 def start_capture():
     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
     
@@ -144,7 +83,7 @@ def start_capture():
     capture_images()
 
 def capture_images():
-    global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time, panel
+    global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
     
     while capture_started:
         ret, frame = cap.read()
@@ -155,19 +94,6 @@ def capture_images():
         image_path = os.path.join(os.getcwd(), f"image_{capture_count}.jpg")
         cv2.imwrite(image_path, frame)
 
-        # Update the panel with the new image
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image_rgb = Image.fromarray(image_rgb)
-        image_rgb = ImageTk.PhotoImage(image_rgb)
-        
-        if panel is None:
-            panel = Label(root, image=image_rgb)
-            panel.image = image_rgb
-            panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-        else:
-            panel.configure(image=image_rgb)
-            panel.image = image_rgb
-
         capture_count -= 1
         if capture_count <= 0 or (time.time() - capture_start_time) >= capture_max_seconds:
             stop_capture()
@@ -175,8 +101,8 @@ def capture_images():
 
         time.sleep(1)  # Capture image every second
 
-# Function to stop capturing images
 
+# Function to stop capturing images
 def stop_capture():
     global cap, capture_started
     capture_started = False
@@ -187,119 +113,7 @@ def stop_capture():
     
 
 
-# # Function to train the SVM model on the dataset
-# def train_model():
-#     global pca, le, model
-    
-#     # Delete existing model if it exists
-#     if os.path.exists('svm_model.pkl'):
-#         os.remove('svm_model.pkl')
-#         print("Existing model has been deleted.")
-    
-#     # Load data
-#     print("[INFO] loading dataset...")
-#     try:
-#         faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
-
-#         (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
-        
-#         if len(faces) == 0:
-#             raise Exception("No faces found in dataset.")
-
-#         print("[INFO] {} images in dataset".format(len(faces)))
-
-#         # Flatten all 2D faces into a 1D list of pixel intensities
-#         pcaFaces = np.array([f.flatten() for f in faces])
-
-#         # Encode the string labels as integers
-#         labels = le.fit_transform(labels)
-
-#         # Check if there are enough samples to split
-#         if len(labels) < 2:
-#             raise Exception("Not enough samples to split into training and testing sets.")
-
-#         # Construct our training and testing split
-#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
-#         (origTrain, origTest, trainX, testX, trainY, testY) = split
-
-#         print("[INFO] creating eigenfaces...")
-#         start = time.time()
-#         trainX = pca.fit_transform(trainX)
-#         end = time.time()
-#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
-
-#         print("[INFO] training SVM classifier...")
-#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
-#         model.fit(trainX, trainY)
-
-#         os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
-#         filename = 'svm_model.pkl'
-#         with open(filename, 'wb') as file:
-#             pickle.dump(model, file)
-#             print(f"Saved the model to {filename}")
-        
-#         messagebox.showinfo("Training Complete", "SVM Model trained successfully!")
-
-#     except Exception as e:
-#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
-
-
-# def train_model():
-#     global pca, le, model
-    
-#     # Delete existing model if it exists
-#     if os.path.exists('svm_model.pkl'):
-#         os.remove('svm_model.pkl')
-#         print("Existing model has been deleted.")
-    
-#     # Load data
-#     print("[INFO] loading dataset...")
-#     try:
-#         faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
-
-#         (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
-        
-#         if len(faces) == 0:
-#             raise Exception("No faces found in dataset.")
-
-#         print("[INFO] {} images in dataset".format(len(faces)))
-
-#         # Flatten all 2D faces into a 1D list of pixel intensities
-#         pcaFaces = np.array([f.flatten() for f in faces])
-
-#         # Encode the string labels as integers
-#         labels = le.fit_transform(labels)
-
-#         # Check if there are enough samples to split
-#         if len(labels) < 2:
-#             raise Exception("Not enough samples to split into training and testing sets.")
-
-#         # Construct our training and testing split
-#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
-#         (origTrain, origTest, trainX, testX, trainY, testY) = split
-
-#         print("[INFO] creating eigenfaces...")
-#         start = time.time()
-#         trainX = pca.fit_transform(trainX)
-#         end = time.time()
-#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
-
-#         print("[INFO] training SVM classifier...")
-#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
-#         model = BaggingClassifier(model, n_estimators=10, random_state=42)
-#         model.fit(trainX, trainY)
-
-#         os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
-#         filename = 'svm_model.pkl'
-#         with open(filename, 'wb') as file:
-#             pickle.dump(model, file)
-#             print(f"Saved the Bagging SVM model to {filename}")
-        
-#         messagebox.showinfo("Training Complete", "Bagging SVM Model trained successfully!")
-
-#     except Exception as e:
-#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
-
+# Function to train the SVM model on the dataset
 def train_model():
     global pca, le, model, random_forest_model
     
@@ -438,6 +252,7 @@ def load_image():
             return
         
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_rgb_random = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         # Check if model is trained
         if model is None:
@@ -456,6 +271,11 @@ def load_image():
             cv2.putText(image_rgb, predicted_name, (startX, startY - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.rectangle(image_rgb, (startX, startY), (endX, endY), (0, 255, 0), 2)
+
+            (startX, startY, endX, endY) = box
+            cv2.putText(image_rgb_random, predicted_name_random, (startX, startY - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv2.rectangle(image_rgb_random, (startX, startY), (endX, endY), (0, 255, 0), 2)
         else:
             result_label.config(text="No face detected or multiple faces detected.")
         
@@ -466,7 +286,13 @@ def load_image():
             new_height = int(image_rgb.shape[0] * scale_factor)
             image_rgb = cv2.resize(image_rgb, (max_width, new_height))
 
-        load_image_onto_image_frame(image_rgb)
+        max_width = 800
+        if image_rgb_random.shape[1] > max_width:
+            scale_factor = max_width / image_rgb_random.shape[1]
+            new_height = int(image_rgb_random.shape[0] * scale_factor)
+            image_rgb_random = cv2.resize(image_rgb_random, (max_width, new_height))
+
+        load_image_onto_image_frame(image_rgb,image_rgb_random)
        
         back_btn.pack(side="top", padx="10", pady="10")
 
@@ -559,29 +385,54 @@ def start_capture_gui():
 
     back_btn.pack(side="top", padx="10", pady="10")
 
-def load_image_onto_image_frame(image):
-    global image_frame, image_label, tk_image
+def load_image_onto_image_frame(image, image_rgb_random):
+    global image_frame, image_label, tk_image, image_label_rgb_random, tk_image_rgb_random
 
+    # Destroy the existing image frame if it exists
     if image_frame:
         image_frame.destroy()
         image_frame = None
 
+    # Create a new image frame
     image_frame = tk.Frame(root, bd=5, relief="solid", borderwidth=2)
-    image_frame.pack(side="left", fill="y", padx=10, pady=10)
+    image_frame.pack(side="left", fill="both", padx=10, pady=10)
 
-    # Convert the image to a format that Tkinter can use
+    # Resize images to fit within the screen dimensions (adjust as needed)
+    max_width = root.winfo_screenwidth()
+    max_height = root.winfo_screenheight()
+
+    # Resize and convert the first image to a format that Tkinter can use
     pil_image = Image.fromarray(image)
+    pil_image.thumbnail((max_width, max_height), Image.LANCZOS)
     tk_image = ImageTk.PhotoImage(pil_image)
 
-    # If image label already exists, update its image
+    # Resize and convert the second image to a format that Tkinter can use
+    pil_image_rgb_random = Image.fromarray(image_rgb_random)
+    pil_image_rgb_random.thumbnail((max_width, max_height), Image.LANCZOS)
+    tk_image_rgb_random = ImageTk.PhotoImage(pil_image_rgb_random)
 
-    # Create a label to display the image
+    # Get dimensions of the images
+    width1, height1 = pil_image.size
+    width2, height2 = pil_image_rgb_random.size
+
+    # Dynamically adjust the window width to fit both images side by side
+    total_width = width1 + width2 + 300 # 40 for padding and borders
+    root.geometry(f"{total_width}x{max(height1, height2) + 100}")  # 100 for padding and borders
+
+    # Create a label to display the first image
     image_label = tk.Label(image_frame, image=tk_image)
     image_label.image = tk_image  # Keep a reference to avoid garbage collection
 
-    # Pack the label into the frame
-    image_label.pack()
-    # Keep a reference to the image to avoid garbage collection
+    # Create a label to display the second image
+    image_label_rgb_random = tk.Label(image_frame, image=tk_image_rgb_random)
+    image_label_rgb_random.image = tk_image_rgb_random  # Keep a reference to avoid garbage collection
+
+    # Pack the labels into the frame side by side
+    image_label.pack(side="left", padx=10, pady=10)
+    image_label_rgb_random.pack(side="left", padx=10, pady=10)
+
+
+
 
 def predict_single_face_with_image(image):
     global model, pca, le, net
@@ -702,7 +553,7 @@ def clear_image_frame():
     if image_frame is not None:
         image_frame.destroy()
         image_frame = None
-
+    
 def stop_camera_feed():
     global capture_running, cap
     capture_running = False
