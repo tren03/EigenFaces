@@ -12,6 +12,10 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import argparse
+from sklearn.ensemble import BaggingClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+
 
 # Global variables for capturing images
 capture_name = ""
@@ -25,6 +29,9 @@ image_frame=None
 live_feed=False
 image_label = None
 tk_image = None
+random_forest_model = None
+
+
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
@@ -45,7 +52,8 @@ pca = PCA(svd_solver="randomized", n_components=args["num_components"], whiten=T
 le = LabelEncoder()
 model = None
 
-# # Function to start capturing images
+
+
 # def start_capture():
 #     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
     
@@ -58,7 +66,10 @@ model = None
 
 #     # Create directory if not exists
 #     faces_root = "../Faces"
+#     if not os.path.exists(faces_root):
+#         os.mkdir(faces_root)
 #     os.chdir(faces_root)
+    
 #     if not os.path.exists(capture_name):
 #         os.mkdir(capture_name)
 #     os.chdir(capture_name)
@@ -84,19 +95,7 @@ model = None
 #         image_path = os.path.join(os.getcwd(), f"image_{capture_count}.jpg")
 #         cv2.imwrite(image_path, frame)
 
-#         # Update GUI image display
-
-#         # image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#         # image = Image.fromarray(image)
-#         # image = ImageTk.PhotoImage(image)
-        
-#         # if panel is None:
-#         #     panel = Label(root, image=image)
-#         #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-#         # else:
-#         #     panel.configure(image=image)
-#         #     panel.image = image
-#                 # Update the panel with the new image
+#         # Update the panel with the new image
 #         image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 #         image_rgb = Image.fromarray(image_rgb)
 #         image_rgb = ImageTk.PhotoImage(image_rgb)
@@ -115,62 +114,6 @@ model = None
 #             break
 
 #         time.sleep(1)  # Capture image every second
-
-# # Function to stop capturing images
-# def stop_capture():
-#     global cap, capture_started
-#     capture_started = False
-#     if cap is not None:
-#         cap.release()
-#     cv2.destroyAllWindows()
-
-# # Function to train the SVM model on the dataset
-# def train_model():
-#     global pca, le, model
-    
-#     # if os.path.exists('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm/svm_model.pkl'):
-#     #     os.remove('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm/svm_model.pkl')
-#     #     print("model has been deleted.")
-#     # Load data
-#     print("[INFO] loading dataset...")
-#     try:
-#         print(args["input"])
-#         (faces, labels) = load_face_dataset(args["input"], net,
-#                                             minConfidence=args["confidence"], minSamples=20)
-#         print("[INFO] {} images in dataset".format(len(faces)))
-
-#         # Flatten all 2D faces into a 1D list of pixel intensities
-#         pcaFaces = np.array([f.flatten() for f in faces])
-
-#         # Encode the string labels as integers
-#         labels = le.fit_transform(labels)
-
-#         # Construct our training and testing split
-#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25,
-#                                 stratify=labels, random_state=42)
-#         (origTrain, origTest, trainX, testX, trainY, testY) = split
-
-#         print("[INFO] creating eigenfaces...")
-#         start = time.time()
-#         trainX = pca.fit_transform(trainX)
-#         end = time.time()
-#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start))
-
-#         print("[INFO] training SVM classifier...")
-#         global model
-#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
-#         model.fit(trainX, trainY)
-
-#         filename = 'svm_model.pkl'
-#         with open(filename, 'wb') as file:
-#             pickle.dump(model, file)
-#             print(f"Saved the model to {filename}")
-        
-#         messagebox.showinfo("Training Complete", "SVM Model trained successfully!")
-
-#     except Exception as e:
-#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
-
 
 def start_capture():
     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time
@@ -200,7 +143,6 @@ def start_capture():
 
     capture_images()
 
-# Function to capture images
 def capture_images():
     global capture_name, capture_count, capture_max_seconds, cap, capture_started, capture_start_time, panel
     
@@ -234,21 +176,141 @@ def capture_images():
         time.sleep(1)  # Capture image every second
 
 # Function to stop capturing images
+
 def stop_capture():
     global cap, capture_started
     capture_started = False
+
     if cap is not None:
         cap.release()
     cv2.destroyAllWindows()
+    
 
-# Function to train the SVM model on the dataset
+
+# # Function to train the SVM model on the dataset
+# def train_model():
+#     global pca, le, model
+    
+#     # Delete existing model if it exists
+#     if os.path.exists('svm_model.pkl'):
+#         os.remove('svm_model.pkl')
+#         print("Existing model has been deleted.")
+    
+#     # Load data
+#     print("[INFO] loading dataset...")
+#     try:
+#         faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
+
+#         (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
+        
+#         if len(faces) == 0:
+#             raise Exception("No faces found in dataset.")
+
+#         print("[INFO] {} images in dataset".format(len(faces)))
+
+#         # Flatten all 2D faces into a 1D list of pixel intensities
+#         pcaFaces = np.array([f.flatten() for f in faces])
+
+#         # Encode the string labels as integers
+#         labels = le.fit_transform(labels)
+
+#         # Check if there are enough samples to split
+#         if len(labels) < 2:
+#             raise Exception("Not enough samples to split into training and testing sets.")
+
+#         # Construct our training and testing split
+#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
+#         (origTrain, origTest, trainX, testX, trainY, testY) = split
+
+#         print("[INFO] creating eigenfaces...")
+#         start = time.time()
+#         trainX = pca.fit_transform(trainX)
+#         end = time.time()
+#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
+
+#         print("[INFO] training SVM classifier...")
+#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
+#         model.fit(trainX, trainY)
+
+#         os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
+#         filename = 'svm_model.pkl'
+#         with open(filename, 'wb') as file:
+#             pickle.dump(model, file)
+#             print(f"Saved the model to {filename}")
+        
+#         messagebox.showinfo("Training Complete", "SVM Model trained successfully!")
+
+#     except Exception as e:
+#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
+
+
+# def train_model():
+#     global pca, le, model
+    
+#     # Delete existing model if it exists
+#     if os.path.exists('svm_model.pkl'):
+#         os.remove('svm_model.pkl')
+#         print("Existing model has been deleted.")
+    
+#     # Load data
+#     print("[INFO] loading dataset...")
+#     try:
+#         faces_root = "/home/bmsce/Projects/EigenFaces/Faces"
+
+#         (faces, labels) = load_face_dataset(faces_root, net, minConfidence=args["confidence"], minSamples=20)
+        
+#         if len(faces) == 0:
+#             raise Exception("No faces found in dataset.")
+
+#         print("[INFO] {} images in dataset".format(len(faces)))
+
+#         # Flatten all 2D faces into a 1D list of pixel intensities
+#         pcaFaces = np.array([f.flatten() for f in faces])
+
+#         # Encode the string labels as integers
+#         labels = le.fit_transform(labels)
+
+#         # Check if there are enough samples to split
+#         if len(labels) < 2:
+#             raise Exception("Not enough samples to split into training and testing sets.")
+
+#         # Construct our training and testing split
+#         split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
+#         (origTrain, origTest, trainX, testX, trainY, testY) = split
+
+#         print("[INFO] creating eigenfaces...")
+#         start = time.time()
+#         trainX = pca.fit_transform(trainX)
+#         end = time.time()
+#         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
+
+#         print("[INFO] training SVM classifier...")
+#         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
+#         model = BaggingClassifier(model, n_estimators=10, random_state=42)
+#         model.fit(trainX, trainY)
+
+#         os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
+#         filename = 'svm_model.pkl'
+#         with open(filename, 'wb') as file:
+#             pickle.dump(model, file)
+#             print(f"Saved the Bagging SVM model to {filename}")
+        
+#         messagebox.showinfo("Training Complete", "Bagging SVM Model trained successfully!")
+
+#     except Exception as e:
+#         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
+
 def train_model():
-    global pca, le, model
+    global pca, le, model, random_forest_model
     
     # Delete existing model if it exists
     if os.path.exists('svm_model.pkl'):
         os.remove('svm_model.pkl')
         print("Existing model has been deleted.")
+
+    if os.path.exists('random_forest_model.pkl'):
+        os.remove('random_forest_model.pkl')
+        print("Existing random model has been deleted.")
     
     # Load data
     print("[INFO] loading dataset...")
@@ -282,24 +344,36 @@ def train_model():
         end = time.time()
         print("[INFO] computing eigenfaces took {:.4f} seconds".format(end - start)) 
 
-        print("[INFO] training SVM classifier...")
+        print("[INFO] training Random Forest classifier And svc ...")
+
+        
         model = SVC(kernel="rbf", C=10.0, gamma=0.001, random_state=42, probability=True)
+        model = BaggingClassifier(model, n_estimators=10, random_state=42)
         model.fit(trainX, trainY)
 
+        random_forest_model = RandomForestClassifier(n_estimators=100, random_state=42)
+        random_forest_model.fit(trainX, trainY)
+
         os.chdir('/home/bmsce/Projects/EigenFaces/Eigenfaces_svm')
+        filename = 'random_forest_model.pkl'
+        with open(filename, 'wb') as file:
+            pickle.dump(random_forest_model, file)
+            print(f"Saved the Random Forest model to {filename}")
+
         filename = 'svm_model.pkl'
         with open(filename, 'wb') as file:
-            pickle.dump(model, file)
-            print(f"Saved the model to {filename}")
+            pickle.dump(random_forest_model, file)
+            print(f"Saved the svc to {filename}")
         
-        messagebox.showinfo("Training Complete", "SVM Model trained successfully!")
+        messagebox.showinfo("Training Complete", "Random Forest Model and svc trained successfully!")
 
     except Exception as e:
         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
 
+
 # Function to predict a single face from an image
 def predict_single_face_with_path(image_path):
-    global model, pca, le, net
+    global random_forest_model,model, pca, le, net
     
     if model is None:
         print("Error: Model not trained yet.")
@@ -331,12 +405,20 @@ def predict_single_face_with_path(image_path):
 
         # Perform face recognition prediction
         prediction = model.predict(pca_face)
+        prediction_random_forest = random_forest_model.predict(pca_face)
+
+        # Get name from label encoder
+        predicted_name_random = le.inverse_transform(prediction_random_forest)[0]
         predicted_name = le.inverse_transform(prediction)[0]
 
+
         # Get the predicted probabilities
+        probabilities_random_forest = random_forest_model.predict_proba(pca_face)        
         probabilities = model.predict_proba(pca_face)
 
-        return predicted_name, probabilities, (startX, startY, endX, endY)
+        print(f"random forest prediction = {predicted_name_random} and prob = {probabilities_random_forest}")
+
+        return predicted_name_random,probabilities_random_forest,predicted_name, probabilities, (startX, startY, endX, endY)
     else:
         print("Error: Detected more than one face in the test image.")
         return None, None, None
@@ -363,10 +445,10 @@ def load_image():
             return
         
         # Perform face recognition on the selected image
-        predicted_name, predicted_proba, box = predict_single_face_with_path(path)
+        predicted_name_random,predicted_proba_random,predicted_name, predicted_proba, box = predict_single_face_with_path(path)
         
         if predicted_name is not None:
-            result_text = f"Predicted Name: {predicted_name}\nProbability: {np.max(predicted_proba):.2f}"
+            result_text = f"Predicted Name: {predicted_name} and Probability: {np.max(predicted_proba):.2f} for SVC \n Predicted Name: {predicted_name_random} and Probability: {np.max(predicted_proba_random):.2f} for Random forest"
             result_label.config(text=result_text)
 
             # Draw the bounding box and predicted name on the image
@@ -383,39 +465,47 @@ def load_image():
             scale_factor = max_width / image_rgb.shape[1]
             new_height = int(image_rgb.shape[0] * scale_factor)
             image_rgb = cv2.resize(image_rgb, (max_width, new_height))
-        
-        # Convert the image to RGB for Tkinter display
-        # image_rgb = Image.fromarray(image_rgb)
-        # image_rgb = ImageTk.PhotoImage(image_rgb)
 
         load_image_onto_image_frame(image_rgb)
-        # Update the panel with the new image
-        # if panel is None:
-        #     panel = Label(image=image_rgb)
-        #     panel.image = image_rgb
-        #     panel.pack(side="top", padx=10, pady=10, fill=tk.BOTH, expand=True)
-        # else:
-        #     panel.config(image=image_rgb)
-        #     panel.image = image_rgb
-
-        # Show the back button
+       
         back_btn.pack(side="top", padx="10", pady="10")
 
-        # Hide the other buttons if necessary
-        # btn.pack_forget()
+        
 
-# Function to go back to the home screen
+# # Function to go back to the home screen
+# def go_back():
+
+#     global panel, capture_frame,image_frame,image_label,tk_image,live_feed
+
+#     #Check if capture frame already exists, do nothing if it does
+#     if capture_frame:
+#         capture_frame.destroy()
+#         capture_frame = None  # Reset the global variable
+#     if image_frame:
+#         image_frame.destroy()
+#         image_frame=None
+#     if panel:
+#         panel.image = None
+#     clear_image_frame()
+
+#     # Reset the result label text
+#     result_label.config(text=" Welcome to the Home page :) ")
+
+#     # Show essential buttons
+#     btn.pack(side="top", padx="10", pady="10")
+#     train_btn.pack(side="top", padx="10", pady="10")
+#     capture_btn.pack(side="top", padx="10", pady="10")
+
 def go_back():
+    global panel, capture_frame, image_frame, image_label, tk_image, live_feed
 
-    global panel, capture_frame,image_frame,image_label,tk_image,live_feed
-
-    #Check if capture frame already exists, do nothing if it does
+    # Check if capture frame already exists, do nothing if it does
     if capture_frame:
         capture_frame.destroy()
         capture_frame = None  # Reset the global variable
     if image_frame:
         image_frame.destroy()
-        image_frame=None
+        image_frame = None
     if panel:
         panel.image = None
     clear_image_frame()
@@ -423,22 +513,13 @@ def go_back():
     # Reset the result label text
     result_label.config(text=" Welcome to the Home page :) ")
 
-    # Show essential buttons
+    # Pack essential buttons again to ensure the layout remains the same
     btn.pack(side="top", padx="10", pady="10")
     train_btn.pack(side="top", padx="10", pady="10")
     capture_btn.pack(side="top", padx="10", pady="10")
-
-    # Hide back button
-    # back_btn.pack_forget()
-
-    # Forget the capture details entry widgets
-    # name_entry.pack_forget()
-    # count_entry.pack_forget()
-    # max_seconds_entry.pack_forget()
-    # name_label.pack_forget()
-    # count_label.pack_forget()
-    # max_seconds_label.pack_forget()
-    # start_capture_btn.pack_forget()
+    start_button.pack(side="top", padx="10", pady="10")
+    stop_button.pack(side="top", padx="10", pady="10")
+    back_btn.pack(side="top", padx="10", pady="10")
 
 
 def start_capture_gui():
@@ -448,6 +529,7 @@ def start_capture_gui():
     if capture_frame:
         capture_frame.destroy()
         capture_frame = None
+
 
     result_label.config(text=" Enter details for capturing images ")
 
@@ -649,6 +731,7 @@ button_frame.pack(side="right", fill="y", padx=10, pady=10)
 # Create a button to load an image
 btn = Button(button_frame, text="Load Image", command=load_image)
 btn.pack(side="top", padx="10", pady="10")
+
 
 # Create a button to train the model
 train_btn = Button(button_frame, text="Train Model", command=train_model)

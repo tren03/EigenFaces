@@ -20,6 +20,7 @@ import pickle
 from imutils import resize
 from sklearn.ensemble import BaggingClassifier
 
+
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
