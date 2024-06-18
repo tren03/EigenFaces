@@ -438,6 +438,7 @@ def start_capture_gui():
 
     back_btn.pack(side="top", padx="10", pady="10")
 
+
 def load_image_onto_image_frame(image, image_rgb_random,image_rgb_lbph):
     global image_frame, image_label, tk_image, image_label_rgb_random, tk_image_rgb_random
 
@@ -499,12 +500,52 @@ def load_image_onto_image_frame(image, image_rgb_random,image_rgb_lbph):
 
 
 
-def predict_single_face_with_image(image):
-    global model, pca, le, net
+# def predict_single_face_with_image(image):
+#     global model, pca, le, net
     
+#     if model is None:
+#         print("Error: Model not trained yet.")
+#         return None, None, None
+
+#     # Perform face detection
+#     boxes = detect_faces(net, image)
+
+#     # Assuming there's only one face in the test image
+#     if len(boxes) == 1:
+#         # Extract the face ROI
+#         (startX, startY, endX, endY) = boxes[0]
+#         faceROI = image[startY:endY, startX:endX]
+
+#         # Resize the face ROI
+#         faceROI = cv2.resize(faceROI, (47, 62))
+
+#         # Convert the face ROI to grayscale
+#         gray_face = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
+
+#         # Flatten the grayscale face ROI
+#         flattened_face = gray_face.flatten()
+
+#         # Perform PCA transformation
+#         pca_face = pca.transform(flattened_face.reshape(1, -1))
+
+#         # Perform face recognition prediction
+#         prediction = model.predict(pca_face)
+#         predicted_name = le.inverse_transform(prediction)[0]
+
+#         # Get the predicted probabilities
+#         probabilities = model.predict_proba(pca_face)
+
+#         return predicted_name, probabilities, (startX, startY, endX, endY)
+#     else:
+#         print("Error: Detected more than one face in the test image.")
+#         return None, None, None
+
+def predict_single_face_with_image(image):
+    global model, random_forest_model, pca, le, net, trainYlbph, lbph_recognizer
+
     if model is None:
         print("Error: Model not trained yet.")
-        return None, None, None
+        return None, None, None, None, None, None, None, None
 
     # Perform face detection
     boxes = detect_faces(net, image)
@@ -527,17 +568,30 @@ def predict_single_face_with_image(image):
         # Perform PCA transformation
         pca_face = pca.transform(flattened_face.reshape(1, -1))
 
-        # Perform face recognition prediction
-        prediction = model.predict(pca_face)
-        predicted_name = le.inverse_transform(prediction)[0]
+        # Perform face recognition prediction for the SVM model
+        prediction_svm = model.predict(pca_face)
+        predicted_name_svm = le.inverse_transform(prediction_svm)[0]
+        probabilities_svm = model.predict_proba(pca_face)
 
-        # Get the predicted probabilities
-        probabilities = model.predict_proba(pca_face)
+        # Perform face recognition prediction for the Random Forest model
+        prediction_rf = random_forest_model.predict(pca_face)
+        predicted_name_rf = le.inverse_transform(prediction_rf)[0]
+        probabilities_rf = random_forest_model.predict_proba(pca_face)
 
-        return predicted_name, probabilities, (startX, startY, endX, endY)
-    else:
-        print("Error: Detected more than one face in the test image.")
-        return None, None, None
+        # Perform face recognition prediction for the LBPH model
+        prediction_lbph_before_le, conf_lbph = lb.predict_lbph(gray_face, lbph_recognizer, trainYlbph)
+        predicted_name_lbph = le.inverse_transform([prediction_lbph_before_le])[0]
+
+        # Hard voting
+        votes = [predicted_name_svm, predicted_name_rf, predicted_name_lbph]
+        final_prediction = max(set(votes), key=votes.count)
+
+        print(f"Random Forest prediction = {predicted_name_rf} and prob = {probabilities_rf}")
+
+        return final_prediction, (startX, startY, endX, endY), predicted_name_svm, probabilities_svm, predicted_name_rf, probabilities_rf, predicted_name_lbph, conf_lbph
+
+    return None, None, None, None, None, None, None, None
+
 
 def show_constant_image_live_feed():
     global capture_running, cap
@@ -553,15 +607,15 @@ def show_constant_image_live_feed():
     # Convert the frame to RGB
     image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    predicted_name, predicted_proba, box = predict_single_face_with_image(image_rgb)
+    final_prediction,box, predicted_name_svm, probabilities_svm, predicted_name_rf, probabilities_rf, predicted_name_lbph, conf_lbph = predict_single_face_with_image(image_rgb)
 
-    if predicted_name is not None:
-        result_text = f"Predicted Name: {predicted_name}\nProbability: {np.max(predicted_proba):.2f}"
+    if final_prediction is not None:
+        result_text = f"Predicted Name: {final_prediction}"
         result_label.config(text=result_text)
 
         # Draw the bounding box and predicted name on the image
         (startX, startY, endX, endY) = box
-        cv2.putText(image_rgb, predicted_name, (startX, startY - 10),
+        cv2.putText(image_rgb, final_prediction, (startX, startY - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         cv2.rectangle(image_rgb, (startX, startY), (endX, endY), (0, 255, 0), 2)
     else:
@@ -579,6 +633,48 @@ def show_constant_image_live_feed():
     
     # Schedule the function to be called again after 10 milliseconds
     root.after(10, show_constant_image_live_feed)
+
+
+# def show_constant_image_live_feed():
+#     global capture_running, cap
+
+#     if not capture_running:
+#         return
+
+#     ret, frame = cap.read()
+#     if not ret:
+#         print("Failed to capture image from camera")
+#         return
+
+#     # Convert the frame to RGB
+#     image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+#     predicted_name, predicted_proba, box = predict_single_face_with_image(image_rgb)
+
+#     if predicted_name is not None:
+#         result_text = f"Predicted Name: {predicted_name}\nProbability: {np.max(predicted_proba):.2f}"
+#         result_label.config(text=result_text)
+
+#         # Draw the bounding box and predicted name on the image
+#         (startX, startY, endX, endY) = box
+#         cv2.putText(image_rgb, predicted_name, (startX, startY - 10),
+#                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+#         cv2.rectangle(image_rgb, (startX, startY), (endX, endY), (0, 255, 0), 2)
+#     else:
+#         result_label.config(text="No face detected or multiple faces detected.")
+
+#     # Resize the image to fit within the GUI window if necessary
+#     max_width = 800
+#     if image_rgb.shape[1] > max_width:
+#         scale_factor = max_width / image_rgb.shape[1]
+#         new_height = int(image_rgb.shape[0] * scale_factor)
+#         image_rgb = cv2.resize(image_rgb, (max_width, new_height))
+
+    
+#     load_image_onto_image_frame_live_feed(image_rgb)
+    
+#     # Schedule the function to be called again after 10 milliseconds
+#     root.after(10, show_constant_image_live_feed)
 
 
 def load_image_onto_image_frame_live_feed(image):
