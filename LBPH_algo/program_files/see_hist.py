@@ -23,7 +23,7 @@ weightsPath = os.path.sep.join([args["face"],
 net = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 faces=[]
-image_path = '/home/sriram/Desktop/programfiles/programmingfiles/EigenFaces/Faces/sriram/image_3.jpg'  # Replace with your image path
+image_path = '/home/bmsce/Projects/EigenFaces/Faces/aryan/image_3.jpg'  # Replace with your image path
 image = cv2.imread(image_path)
 
 boxes=detect_faces(net,image)

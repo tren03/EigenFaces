@@ -105,7 +105,7 @@ def load_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
         boxes = detect_faces(net, image, minConfidence)
         for (startX, startY, endX, endY) in boxes:
             faceROI = image[startY:endY, startX:endX]
-            faceROI = cv2.resize(faceROI, (100, 100))
+            faceROI = cv2.resize(faceROI, (68, 68))
             faceROI = cv2.GaussianBlur(faceROI, (5, 5), 0)
             faceROI_grey = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
             faceROI = np.stack([faceROI_grey] * 3, axis=-1)
