@@ -74,7 +74,7 @@ while True:
     boxes=detect_faces(frame)
     for (startX,startY,endX,endY) in boxes:
         faceROI=frame[startY:endY,startX:endX]
-        faceROI=cv2.resize(faceROI,(68,68))
+        faceROI=cv2.resize(faceROI,(100,100))
         faceROI=cv2.cvtColor(faceROI,cv2.COLOR_BGR2GRAY)
         cv2.imshow("modified",faceROI)
         # faces.append(faceROI)

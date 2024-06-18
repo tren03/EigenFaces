@@ -1,3 +1,7 @@
 
 myenv/
 nn/
+Eigenfaces_svm/svm_model.pkl
+Eigenfaces_svm/random_forest_model.pkl
+Eigenfaces_svm/lbph_algo_model.pkl
+Eigenfaces_svm/labels.pkl

@@ -27,7 +27,7 @@ def detect_faces(net,image,minConfidence=0.5):
             boxes.append((startX,startY,endX,endY))
     return boxes
 
-# def load_dataset(input_path,net,minConfidence=0.3,minsamples=15):
+# def load_dataset(input_path,net,minConfidence=0.5,minSamples=15):
 #     # grab the paths to all images in our input directory, extract all the iamges from that dir
 #     imagePaths=list(paths.list_images(input_path))
 #     #grab the name of the image  
@@ -47,7 +47,7 @@ def detect_faces(net,image,minConfidence=0.5):
 
 #         # only process images that have a sufficient number of
 # 		# examples belonging to the class
-#         if(counts[names.index(name)]<minsamples):
+#         if(counts[names.index(name)]<minSamples):
 #             continue
 
 #         #perfrom the detection
@@ -105,7 +105,7 @@ def load_dataset(inputPath, net, minConfidence=0.5, minSamples=15):
         boxes = detect_faces(net, image, minConfidence)
         for (startX, startY, endX, endY) in boxes:
             faceROI = image[startY:endY, startX:endX]
-            faceROI = cv2.resize(faceROI, (47, 62))
+            faceROI = cv2.resize(faceROI, (100, 100))
             faceROI = cv2.GaussianBlur(faceROI, (5, 5), 0)
             faceROI_grey = cv2.cvtColor(faceROI, cv2.COLOR_BGR2GRAY)
             faceROI = np.stack([faceROI_grey] * 3, axis=-1)
