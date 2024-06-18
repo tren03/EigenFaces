@@ -164,7 +164,7 @@ def train_model():
             raise Exception("Not enough samples to split into training and testing sets.")
 
         # Construct our training and testing split
-        split = train_test_split(faces, pcaFaces, labels, test_size=0.25, stratify=labels, random_state=42)
+        split = train_test_split(faces, pcaFaces, labels, test_size=0.1, stratify=labels, random_state=42)
         (origTrain, origTest, trainX, testX, trainY, testY) = split
 
         split_lbph=train_test_split(faces,labels,test_size=0.25, stratify=labels, random_state=42)
@@ -611,7 +611,7 @@ def show_constant_image_live_feed():
     final_prediction,box, predicted_name_svm, probabilities_svm, predicted_name_rf, probabilities_rf, predicted_name_lbph, conf_lbph = predict_single_face_with_image(image_rgb)
 
     if final_prediction is not None:
-        result_text = f"Predicted Name: {final_prediction}"
+        result_text = f"Predicted Name: {predicted_name_svm} Confidence {np.max(probabilities_svm)}"
         result_label.config(text=result_text)
 
         # Draw the bounding box and predicted name on the image
