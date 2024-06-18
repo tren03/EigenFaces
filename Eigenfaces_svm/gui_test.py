@@ -215,7 +215,7 @@ def train_model():
             print(f"Saved the ytrain to {filename}")        
 
         
-        messagebox.showinfo("Training Complete", "Random Forest Model and svc trained successfully!")
+        messagebox.showinfo("Training Complete", "Random Forest Model ,SVC and LBPH trained successfully!")
 
     except Exception as e:
         messagebox.showerror("Training Error", f"Error occurred during training:\n{str(e)}")
