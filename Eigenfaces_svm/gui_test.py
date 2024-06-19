@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import cv2
 import os
 import numpy as np
+import pandas as pd
 import time
 from pyimagesearch.faces import detect_faces, load_face_dataset
 import pickle
@@ -34,6 +35,34 @@ lbph_recognizer=None
 trainYlbph=None
 vishnudir='/home/bmsce/Projects/EigenFaces'
 sriramdir='/home/sriram/Desktop/programfiles/programmingfiles/EigenFaces'
+
+variables = {
+    "capture_name": "",
+    "capture_count": 0,
+    "capture_max_seconds": 0,
+    "cap": None,
+    "capture_started": False,
+    "capture_start_time": 0,
+    "capture_frame": None,
+    "image_frame": None,
+    "live_feed": False,
+    "image_label": None,
+    "tk_image": None,
+    "random_forest_model": None,
+    "lbph_recognizer": None,
+    "trainYlbph": None,
+    "vishnudir": "/home/bmsce/Projects/EigenFaces",
+    "sriramdir": "/home/sriram/Desktop/programfiles/programmingfiles/EigenFaces"
+}
+
+# Create a DataFrame using all the variables
+df = pd.DataFrame(variables.items(), columns=["Variable", "Value"])
+
+#we call the fucntion for testing purposes to see the state of all the variables
+#called whenever we click on go back to check the variable values 
+#check terminal for the variables
+def function_to_print_var():
+    print(df)
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--input", type=str, default='../Faces',
@@ -399,7 +428,7 @@ def go_back():
     start_button.pack(side="top", padx="10", pady="10")
     stop_button.pack(side="top", padx="10", pady="10")
     back_btn.pack(side="top", padx="10", pady="10")
-
+    function_to_print_var()
 
 def start_capture_gui():
     global panel, capture_frame
